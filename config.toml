@@ -1,0 +1,96 @@
+baseURL = "http://musclesofquartz.com"
+title = "MUSCLES OF QUARTZ"
+theme = "manis-hugo-theme"
+
+# Copyright notice. Note: You can use HTML tag here
+copyright = "&copy; 2020 Sean Turner"
+pluralizeListTitles = true
+
+# Minimum number of posts before paginate navigation show up
+paginate = 10
+
+#hasCJKLanguage = true
+#summaryLength = 0
+
+# Your disqus shortname
+disqusShortname = "musclesofquartz"
+
+# Edit this if you want to translate your blog
+defaultContentLanguage = "en"
+
+# Code Highlighting (Chroma)
+pygmentsCodeFences = true
+pygmentsUseClasses = true
+
+[menu]
+	[[menu.main]]
+		name = "Posts"
+		url = "/post/"
+	
+	[[menu.main]]
+		name = "About"
+		url = "/about"
+
+[taxonomies]
+	tag = "tags"
+
+[params]
+	# If false, use minified CSS (ui.min.css)
+	debugCSS = false
+	# Custom CSS
+	customCSS = []
+	
+	# Site meta description
+	description = "Sweet little Hugo's theme for personal website or blog."
+	# Site's Tagline (Subtitle or Keyword)
+	tagline = "your daily hydrology fix"
+	# If true give attribution to this theme
+	themeAttrib = true
+	# URL to license file, can be outside of your domain
+	licenseURL = "/about/license"
+
+	# Configure which sections for Latest Posts
+	mainSections = ["post"]
+	# Configure which sections for Latest Works
+	# workSections = ["work"]
+	
+	# List of sections that support disqus comments
+	disqusSections = ["blog", "post"]
+	# List of sections that support utterances comments
+	utterancesSections = [ "blog" ]
+	
+	# Utterances Configuration
+	utterancesRepo = ""
+	utterancesTheme = "github-light"
+	utterancesLabel = ""
+
+	# 404 Configuration
+	head404 = "Sorry, I can't find what you want."
+	sub404 = "Back to <a href='/'>Home</a>."
+
+	# Color of your website's accent
+	colorTheme = "#ff6565"
+	# Maximum number of item in Latest Posts or Works
+	latestCount = 3
+	# Path to site's favicon image
+	faviconImg = ""
+	# Date format in item list
+	dateFmt = "Jan 02, 2006"
+
+	# Code Highlighting (HighlightJS)
+	highlightJs = false
+	highlightJsLanguages = [ "go" ]
+	highlightJsStyle = "ocean"
+
+	# Social Links
+	#email = "sean.turner@pnnl.gov"
+	github = "https://github.com/swd-turner/"
+	twitter = "https://twitter.com/sean_turner"
+
+ignoreFiles = ["\\.Rmd$", "\\.Rmarkdown$", "_files$", "_cache$"]
+
+# Language Configuration
+#[languages.in]
+#	lang = "in"
+#	languageName = "Bahasa Indonesia"
+#	weight = 1
