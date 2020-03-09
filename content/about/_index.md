@@ -1,17 +1,9 @@
 ---
-date: "2017-06-24T18:57:12+07:00"
+date: "2020-03-08T19:00:00"
 title: About
 ---
-**Me:** Sean Turner. Hydrologist / water resources modeler at the Pacific Northwest National Lab. Self-proclaimed water infovore.
+**Me:** Sean Turner. Hydrologist / water resources modeler based in Seattle, WA.
 
-**This blog:** Daily updates and occasional commentary on new material coming from science journals, news media, Governmental and non-governmental organizations, and my favorite water blogs. I post whatever I think is interesting and insightful.
+**This blog:** Daily updates and occasional commentary on new material coming from science journals, news media, governmental and non-governmental organizations, and my favorite water blogs. I post whatever I think is interesting and insightful.
 
-**Why "Muscles of Quartz"?** Check out Pablo Neruda's wonderful poem "Entrance of the River". I stole it from there. And please let me know if there's a better poem of peice of literature out there that describes hydrological processes so beautifully!!
-
-
-
-
-
-
-
-
+**Why "Muscles of Quartz"?** I stole the name from the English translation of Pablo Neruda's beautiful poem "Entrance of the Rivers." It's the only piece of acclaimed world literature I'm aware of that describes hydrological processes.
