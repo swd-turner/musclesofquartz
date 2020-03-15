@@ -18,10 +18,10 @@ Here’s a list of my favorite water blogs.
 - [Maven’s Notebook](https://mavensnotebook.com). Insane flow of information on California water resources.
 - [Anne Jefferson](http://all-geo.org/jefferson/blog/). Just discovered this very nice pure hydrology blog. Look forward to following Anne’s posts more closely.
 
-Others that I check in on from time to time:
-- [UK Centre for Ecology and Hydrology blog](https://www.ceh.ac.uk/blog)
-- [On The Public Record](https://onthepublicrecord.org)
-- [IWA](https://iwa-network.org/blog/)
+Others that I intend to check in on from time to time:
+- [UK Centre for Ecology and Hydrology blog](https://www.ceh.ac.uk/blog).
+- [On The Public Record](https://onthepublicrecord.org).
+- [IWA](https://iwa-network.org/blog/).
 - [A blog about Scottish snow](https://scottishsnow.wordpress.com) (!!)
 
 Water blogging is alive and well. Please comment below if I missed any good ones, including blogs in languages other than English.
