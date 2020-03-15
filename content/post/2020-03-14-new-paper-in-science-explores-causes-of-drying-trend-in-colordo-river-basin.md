@@ -11,7 +11,7 @@ description: About the page
 
 That’s from a new study by Paul Milly and Krista Dunne of the USGS.
 
-Here’s my breakdown of the analysis. If you look at the data, discharge appears to decrease at a rate of about 14% per degree (C) of warming. But our hydrological models tell us that it should only be about 5% decrease per degree of warming (and of course there’s uncertainty around those numbers). So what does increased temperature do that we’re not capturing? Milly and Dunne say it’s the effects of snow loss, which reduces albedo and therefore reflection of solar radiation. If their model is correct, the drying trend caused by warning over the Colorado could spell sharp reductions in water supply in future.
+Here’s my breakdown of the analysis. If you look at the data, discharge appears to decrease at a rate of about 14% per degree C of warming. But our hydrological models tell us that it should only be about 5% decrease per degree of warming (and of course there’s uncertainty around those numbers). So what does increased temperature do that we’re not capturing? Milly and Dunne say it’s the effects of snow loss, which reduces albedo and therefore reflection of solar radiation. If their model is correct, the drying trend to be expected with future warning over the Colorado could spell sharp reductions in water supply.
 
 The study is published in [Science](https://science.sciencemag.org/content/367/6483/1252).
 
