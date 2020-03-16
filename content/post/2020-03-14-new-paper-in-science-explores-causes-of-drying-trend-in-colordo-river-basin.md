@@ -1,8 +1,8 @@
 ---
-title: New paper in Science explores causes of drying trend in Colordo River Basin
+title: New paper in Science explores causes of drying trend in Colorado River Basin
 author: ~
 date: '2020-03-15'
-slug: new-paper-in-science-explores-causes-of-drying-trend-in-colordo-river-basin
+slug: new-paper-in-science-explores-causes-of-drying-trend-in-colorado-river-basin
 categories: []
 tags: []
 description: About the page
