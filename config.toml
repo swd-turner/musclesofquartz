@@ -44,7 +44,8 @@ pygmentsUseClasses = true
 	customCSS = []
 	
 	# Site meta description
-	description = "Sweet little Hugo's theme for personal website or blog."
+	description = "Muscles of Quartz"
+	images = ["site-feature-image.jpg"]
 	# Site's Tagline (Subtitle or Keyword)
 	tagline = "a daily blog for water resources infovores"
 	# If true give attribution to this theme
