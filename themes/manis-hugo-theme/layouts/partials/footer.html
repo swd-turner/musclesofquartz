@@ -25,5 +25,8 @@
 		{{ if .Site.Params.HighlightJs }}
 		<script>hljs.initHighlightingOnLoad();</script>
 		{{ end }}
+		
+		{{ partial "google_analytics.html" . }}
+		
 	</body>
 </html>
