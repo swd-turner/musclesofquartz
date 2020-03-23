@@ -12,6 +12,9 @@ paginate = 10
 #hasCJKLanguage = true
 #summaryLength = 0
 
+# Google Analytics
+googleAnalytics = "UA-161628496-1"
+
 # Your disqus shortname
 disqusShortname = "musclesofquartz"
 
