@@ -5,7 +5,7 @@ date: '2020-03-29'
 slug: which-journals-offer-the-best-peer-reviewer-experience
 categories: []
 tags: []
-description:
+description: Transparency and simplicity make the process rewarding
 ---
 I’ve heard people say that scientists should be paid to review papers. I think this is a terrible idea. Journals need to attract field experts that care most about advancement of knowledge, not charlatans out to make an easy fifty bucks. But I do think the journals should make a significant effort to make the process intellectually rewarding and hassle-free. There are two things that distinguish journals in this regard:
 

@@ -5,7 +5,7 @@ date: '2020-03-30'
 slug: supermegaclusterfuck
 categories: []
 tags: []
-description:
+description: NOAA outlook predicts spring floods
 ---
 What’s the word for when there’s a global pandemic and then a flood happens? “Clusterfuck” doesn’t seem to do it justice.
 
