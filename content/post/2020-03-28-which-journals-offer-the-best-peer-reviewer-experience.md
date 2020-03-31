@@ -17,7 +17,7 @@ Here are my ratings (journals I've reviewed for recently only):
 
 **Science (10 / 10)** The only journal I’ve reviewed for that has cross-review. The process is clean, simple, and rewarding.
 
-**Hydrology and Earth System Sciences (9 / 10)** Fully transparent. All reviews are published immediately online for the world to see (also great for authors, who get to see reviewer reports as soon as they land!). One little niggle is that the system requires you to write your review into a text box that is then converted to compiled to pdf. Special characters often get converted to gibberish and you almost always have to go back and fix.
+**Hydrology and Earth System Sciences (9 / 10)** Fully transparent. All reviews are published immediately online for the world to see (also great for authors, who get to see reviewer reports as soon as they land!). One little niggle is that the system requires you to write your review into a text box that is then compiled to pdf. Special characters often get converted to gibberish and you almost always have to go back and fix.
 
 **Journal of Water Resources Planning and Management (8 / 10)** Nice and simple. As soon as you submit your report you get to look at the other reviewer comments. All of the editors I’ve reviewed for are friendly and flexible. One slightly annoying thing is that it’s really hard to find the editorial portal through the journal website.
 
@@ -25,7 +25,7 @@ Here are my ratings (journals I've reviewed for recently only):
 
 **Environmental Research Letters (7 / 10)** Clean and simple process. Reviewer reports made available after editor’s decision letter goes out.
 
-**Nature Climate Change (6 / 10)** Standard process; reviewers are copied into the editor’s decision letter. There isn’t a formal user portal where past reviews are stored, which is something I like.
+**Nature Climate Change (6 / 10)** Standard process; reviewers are copied into the editor’s decision letter. But there isn’t a formal user portal where past reviews are stored.
 
 **Environmental Modelling and Software (6 / 10)** I had trouble accessing the EVISE portal to submit my reports. Get to see other reviewer comments only after editors letter is sent out.
 
