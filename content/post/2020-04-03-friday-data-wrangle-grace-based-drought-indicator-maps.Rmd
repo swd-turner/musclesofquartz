@@ -28,9 +28,9 @@ Then you can download the `.tif` data straight to raster format:
 
 ```{r, message = FALSE}
 library(raster)
-url <- "https://nasagrace.unl.edu/data/" # check here for all available files
-date <- "20200330" # that's March 30th this year
-data_file <- "gws_perc_0125deg_US_20200330.tif" # gws is the groundwater wetness drought indicator... surface soil moisture and rootzone soil moisture are also available
+url <- "https://nasagrace.unl.edu/data/"
+date <- "20200330"
+data_file <- "gws_perc_0125deg_US_20200330.tif"
 raster(paste0(url, date, "/", data_file)) -> gws_raster
 ```
 
