@@ -6,7 +6,7 @@ slug: friday-data-wrangle-grace-based-drought-indicator-maps
 categories: []
 tags: []
 description: Visualize GRACE drought indicators in a flash
-image: "unnamed-chunk-5-1.png"
+images: ["unnamed-chunk-5-1.png"]
 ---
 
 > *Scientists at NASA’s Goddard Space Flight Center generate groundwater and soil moisture drought indicators each week. They are based on terrestrial water storage observations derived from GRACE-FO satellite data and integrated with other observations, using a sophisticated numerical model of land surface water and energy processes.*
