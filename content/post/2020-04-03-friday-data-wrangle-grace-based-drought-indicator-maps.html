@@ -1,0 +1,66 @@
+---
+title: Weekend data wrangle - GRACE-Based drought indicator maps
+author: ~
+date: '2020-04-04'
+slug: friday-data-wrangle-grace-based-drought-indicator-maps
+categories: []
+tags: []
+description: Visualize GRACE drought indicators in a flash
+image: "unnamed-chunk-5-1.png"
+---
+
+
+
+<blockquote>
+<p><em>Scientists at NASA’s Goddard Space Flight Center generate groundwater and soil moisture drought indicators each week. They are based on terrestrial water storage observations derived from GRACE-FO satellite data and integrated with other observations, using a sophisticated numerical model of land surface water and energy processes.</em></p>
+</blockquote>
+<p>That’s from the new portal for <a href="https://nasagrace.unl.edu">NASA GRACE data</a>, a collaboration between NASA and National Drought Mitigation Center of University of Nebraska. Here’s a super-quick tutorial for accessing and plotting the maps using R.</p>
+<p>This will require five libraries: <code>raster</code>, <code>spData</code>, <code>tmap</code>, <code>dplyr</code>, and <code>viridis</code>. If you don’t have those installed then get to it:</p>
+<pre class="r"><code># get required packages
+install.packages(&quot;raster&quot;)
+install.packages(&quot;spData&quot;)
+install.packages(&quot;tmap&quot;)
+install.packages(&quot;dplyr&quot;)
+install.packages(&quot;viridis&quot;)</code></pre>
+<p>Then you can read download the <code>.tif</code> data straight to raster format:</p>
+<pre class="r"><code>library(raster)</code></pre>
+<pre><code>## Loading required package: sp</code></pre>
+<pre class="r"><code>url &lt;- &quot;https://nasagrace.unl.edu/data/&quot; # check here for all available files
+date &lt;- &quot;20200330&quot; # that&#39;s March 30th this year
+data_file &lt;- &quot;gws_perc_0125deg_US_20200330.tif&quot; # gws is the groundwater wetness drought indicator... surface soil moisture and rootzone soil moisture are also available
+raster(paste0(url, date, &quot;/&quot;, data_file)) -&gt; gws_raster</code></pre>
+<p>Let’s take a look at the raster…</p>
+<pre class="r"><code>gws_raster</code></pre>
+<pre><code>## class      : RasterLayer 
+## dimensions : 224, 464, 103936  (nrow, ncol, ncell)
+## resolution : 0.125, 0.125  (x, y)
+## extent     : -125, -67, 25, 53  (xmin, xmax, ymin, ymax)
+## crs        : +proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0 
+## source     : https://nasagrace.unl.edu/data/20200330/gws_perc_0125deg_US_20200330.tif 
+## names      : gws_perc_0125deg_US_20200330</code></pre>
+<p>Pretty standard stuff. Now we can plot easily with <code>tmap</code>.</p>
+<pre class="r"><code>library(tmap)
+tm_shape(gws_raster) +
+  tm_raster()</code></pre>
+<pre><code>## Linking to GEOS 3.6.1, GDAL 2.1.3, PROJ 4.9.3</code></pre>
+<p><img src="/post/2020-04-03-friday-data-wrangle-grace-based-drought-indicator-maps_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
+<p>Ok that looks pretty cool. Let’s polish up with some nice US State boundaries and more impactful color scheme.</p>
+<pre class="r"><code># get US state boundaries from spData
+US_states &lt;- spData::us_states
+
+gws_raster %&gt;% 
+  crop(US_states) %&gt;% 
+  mask(US_states) -&gt;
+  gws_raster_masked
+
+library(tmap)
+tm_shape(gws_raster_masked) +
+  tm_raster(style = &quot;cont&quot;,
+            palette = viridis::magma(256, direction = -1),
+            title = &quot;Percentile relative to 1948 - 2012&quot;) +
+  tm_shape(spData::us_states, is.master = TRUE) +
+  tm_borders(col = &quot;white&quot;, lwd = 2) +
+  tm_layout(legend.outside = TRUE, frame = FALSE,
+            legend.outside.position = &quot;bottom&quot;,
+            main.title = &quot;Groundwater Drought Indicator&quot;)</code></pre>
+<p><img src="/post/2020-04-03-friday-data-wrangle-grace-based-drought-indicator-maps_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
