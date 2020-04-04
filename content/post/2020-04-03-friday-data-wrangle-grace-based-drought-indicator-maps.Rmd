@@ -24,7 +24,7 @@ install.packages("dplyr")
 install.packages("viridis")
 ```
 
-Then you can read download the `.tif` data straight to raster format:
+Then you can download the `.tif` data straight to raster format:
 
 ```{r}
 library(raster)
