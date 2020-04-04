@@ -6,7 +6,7 @@ slug: friday-data-wrangle-grace-based-drought-indicator-maps
 categories: []
 tags: []
 description: Visualize GRACE drought indicators in a flash
-image: "unnamed-chunk-5-1.png"
+images: ["unnamed-chunk-5-1.png"]
 ---
 
 
@@ -24,9 +24,9 @@ install.packages(&quot;dplyr&quot;)
 install.packages(&quot;viridis&quot;)</code></pre>
 <p>Then you can download the <code>.tif</code> data straight to raster format:</p>
 <pre class="r"><code>library(raster)
-url &lt;- &quot;https://nasagrace.unl.edu/data/&quot; # check here for all available files
-date &lt;- &quot;20200330&quot; # that&#39;s March 30th this year
-data_file &lt;- &quot;gws_perc_0125deg_US_20200330.tif&quot; # gws is the groundwater wetness drought indicator... surface soil moisture and rootzone soil moisture are also available
+url &lt;- &quot;https://nasagrace.unl.edu/data/&quot;
+date &lt;- &quot;20200330&quot;
+data_file &lt;- &quot;gws_perc_0125deg_US_20200330.tif&quot;
 raster(paste0(url, date, &quot;/&quot;, data_file)) -&gt; gws_raster</code></pre>
 <p>Let’s take a look at the raster…</p>
 <pre class="r"><code>gws_raster</code></pre>
