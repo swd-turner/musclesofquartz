@@ -26,7 +26,7 @@ install.packages("viridis")
 
 Then you can download the `.tif` data straight to raster format:
 
-```{r}
+```{r, message = FALSE}
 library(raster)
 url <- "https://nasagrace.unl.edu/data/" # check here for all available files
 date <- "20200330" # that's March 30th this year
@@ -41,7 +41,7 @@ gws_raster
 
 Pretty standard stuff. Now we can plot easily with `tmap`.
 
-```{r}
+```{r, message = FALSE}
 library(tmap)
 tm_shape(gws_raster) +
   tm_raster()
@@ -53,6 +53,7 @@ Ok that looks pretty cool. Let's polish up with some nice US State boundaries an
 # get US state boundaries from spData
 US_states <- spData::us_states
 
+# mask raster to CONUS boundaries
 gws_raster %>% 
   crop(US_states) %>% 
   mask(US_states) ->
