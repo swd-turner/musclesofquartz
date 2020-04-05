@@ -45,7 +45,7 @@ pygmentsUseClasses = true
 	
 	# Site meta description
 	description = "Muscles of Quartz"
-	images = ["site-feature-image.jpg"]
+	#images = ["site-feature-image.jpg"]
 	# Site's Tagline (Subtitle or Keyword)
 	tagline = "a daily blog for water resources infovores"
 	# If true give attribution to this theme

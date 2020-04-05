@@ -1,0 +1,74 @@
+---
+title: Two-minute plot - county-level drought impact categories
+author: ~
+date: '2020-04-05'
+slug: more-drought-data
+categories: []
+tags: []
+description: County-level drought impact map in two minutes
+---
+
+
+
+<p>The University of Nebraska Lincoln maintains an excellent <a href="https://droughtmonitor.unl.edu">United States Drought Monitor</a> providing drought impact categories at various levels of granularity.</p>
+<p>Here’s a demo for quickly loading, wrangling, and plotting this week’s county-level data.</p>
+<p>First we need some libraries…</p>
+<pre class="r"><code>library(vroom)   # for data reading
+library(dplyr)   # for data wrangling
+library(ggplot2) # for plotting
+library(viridis) # for nice color scheme</code></pre>
+<p>Then we need to read the data. The county-level data gives % land area within each drought category. Here I’m just going to use <code>dplyr::case_when</code> to select the most severe impact category present in each county.</p>
+<pre class="r"><code>vroom(&quot;https://droughtmonitor.unl.edu/Data/GISData.aspx?mode=table&amp;aoi=county&amp;date=&quot;) %&gt;% 
+  mutate(worst_case_impact = case_when(
+    D4 &gt; 0 ~ &quot;D4&quot;,
+    D3 &gt; 0 ~ &quot;D3&quot;,
+    D2 &gt; 0 ~ &quot;D2&quot;,
+    D1 &gt; 0 ~ &quot;D1&quot;,
+    TRUE ~ &quot;Neutral&quot;
+  )) %&gt;% 
+  select(fips = FIPS, worst_case_impact) %&gt;% 
+  mutate(fips = as.integer(fips)) -&gt;
+  county_impact</code></pre>
+<p>Then I’m gonna read some county polygon data using the <code>map_data</code> function of <code>ggplot2</code>:</p>
+<pre class="r"><code>map_data(&quot;county&quot;,
+         projection = &quot;albers&quot;,
+         parameters = c(39, 45)) %&gt;% 
+  as_tibble() %&gt;% 
+  rename(state = region, county = subregion) -&gt;
+  county_data</code></pre>
+<p>My county name formats are not consistent–so I need some additional info to connect the drought data to the polygons. I’m gonna use a dataset in the <code>maps</code> package to get county FIPS code that will allow for a clean join:</p>
+<pre class="r"><code>maps::county.fips %&gt;% 
+  as_tibble() %&gt;% 
+  tidyr::separate(polyname, into = c(&quot;state&quot;, &quot;county&quot;), sep = &quot;,&quot;) -&gt;
+  fips_state_county
+
+county_data %&gt;% 
+  left_join(fips_state_county) %&gt;% 
+  left_join(county_impact) -&gt;
+  county_plot</code></pre>
+<p>And now for the plot.</p>
+<pre class="r"><code># US state boundaries
+map_data(&quot;state&quot;,
+         projection = &quot;albers&quot;,
+         parameters = c(39, 45)) -&gt;
+  state_boundaries
+
+# color scheme
+c(viridis(4, option = &quot;A&quot;, direction = -1,
+          begin = 0.4, end = 0.9),
+  &quot;darkgrey&quot;) -&gt; drought_cols
+
+# main plot
+county_plot %&gt;% 
+  ggplot(aes(long, lat, group = group)) +
+  geom_polygon(aes(fill = worst_case_impact),
+               colour = alpha(&quot;white&quot;, 1 / 2),
+               size = 0.2) +
+  geom_polygon(data = state_boundaries,
+               colour = &quot;white&quot;, fill = NA) +
+  coord_fixed() +
+  theme_void() +
+  labs(title = &quot;US drought impact status April 2020&quot;,
+       fill = &quot;Impact category&quot;) +
+  scale_fill_manual(values = drought_cols)</code></pre>
+<p><img src="/post/2020-04-04-more-drought-data_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
