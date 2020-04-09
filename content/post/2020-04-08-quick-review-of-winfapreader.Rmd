@@ -1,0 +1,96 @@
+---
+title: New R tool winfapReader reviewed
+author: ~
+date: '2020-04-09'
+slug: quick-review-of-winfapreader
+categories: []
+tags: []
+description: New package makes UK historical flood analysis quick and easy
+---
+
+Yesterday on Twitter I came across [a new R package from Ilaria Prosdocimi](https://twitter.com/ilapros/status/1247876020037959681). The package makes it super-easy to obtain annual maxima and peak-over-threshold data for UK rivers. Here's a quick review and demo of the package.
+
+You can install easily using `devtools`:
+```{r, message = F, eval = FALSE}
+devtools::install_github("ilapros/winfapReader")
+```
+
+For this analysis I'm gonna load `winfapReader` along with a few other libraries.
+```{r, message = F}
+library(winfapReader)
+library(dplyr)
+library(purrr)
+library(lubridate) # for dates
+library(ggplot2)   # for plots
+```
+
+I couldn't find any functionality in `winfapReader` for identifying stations of interest, so I browsed the [National River Flow Archive data viewer](https://nrfa.ceh.ac.uk/data/search) to get a few stations in Renfrewshire, Scotland (where I grew up). The stations are:
+
+- 84011 Gryfe at Craigend
+- 84017 Black Cart Water at Milliken Park
+- 84012 White Cart Water at Hawkhead
+
+Next, a table with the station IDs and names:
+
+```{r, message = F}
+tribble(
+  ~Station, ~name,
+  84011, "Gryfe at Craigend",
+  84017, "Black Cart Water at Milliken Park",
+  84012, "White Cart Water at Hawkhead"
+) -> stations
+```
+
+The `get_amax` function in `winfapReader` returns the time series of annual maxima. The function takes station ids as the argument. You can pump multiple station ids into the function, but I'm gonna set up the vector of station ids and then use `purrr::map_dfr` to get results a single table (rather than a list), which will be easier to work with.
+
+```{r, message = F}
+stations[["Station"]] %>% 
+  map_dfr(get_amax) %>% 
+  as_tibble() ->
+  get_amax_output
+
+get_amax_output
+```
+
+(Not sure what the flow units are---I assume cumecs)
+
+Next I'm gonna identify the season of each annual max and neaten up the table:
+```{r, message = F}
+get_amax_output %>% 
+  left_join(stations) %>% 
+  mutate(month = month(Date),
+         season = case_when(
+           month %in% c(12, 1, 2) ~ "winter",
+           month %in% 3:5 ~ "spring",
+           month %in% 6:8 ~ "summer",
+           month %in% 9:11 ~ "autumn"
+         )) %>% 
+  select(name, WaterYear, Flow, season) -> amax_table
+
+amax_table
+```
+
+And finally plot using `gglot2`:
+```{r, message = F}
+amax_table %>% 
+  ggplot(aes(WaterYear, Flow)) +
+  geom_smooth(se = FALSE, col = "lightgrey",
+              method = "loess",
+              formula = "y ~ x") +
+  geom_point(aes(col = season)) +
+  facet_wrap(~name, scales = "free_y", ncol = 1) +
+  expand_limits(y = 0) +
+  theme_classic() +
+  theme(strip.background = element_blank())+
+  labs(title = "Annual Maximum Flow analysis",
+       subtitle = "Three stations in Renfrewshire, Scotland",
+       y = "Flow (cumecs)", x = "Water year") +
+  geom_vline(xintercept = 1994, alpha = 0.5, linetype = 2)
+```
+
+There we have it. Looks like there was a big flood in the winter of 1994. I must say I don't recall that particular winter (I was ten). Unsurprisingly the annual max almost always occurs in autumn or winter. No strong trend emerging from any of the stations, although it looks like the White Cart has been regulated somewhat in recent years (maybe new operations at a dam upstream).
+
+Overall `winfapReader` is a fine wee package that makes analysis of UK floods easier than catching COVID-19 in New York City. A great addition would be an internal vector of the station ids, which would allow one to easily grab all of the metadata straight up (maybe there's some way of doing this that I missed).
+
+Shout out to [Ilaria Prosdocimi](https://twitter.com/ilapros) and colleagues for providing this tool.
+
