@@ -14,7 +14,7 @@ description: Seriously flawed data
 <blockquote>
 <p><em>This dataset includes the urban risks to water supply as reported by cities in the 2018 CDP Cities questionnaire. Details of the risks alongside their magnitude of impact and timescale are included. For responses to other questions in 2018, please view the 2018 Full Cities dataset.</em></p>
 </blockquote>
-<p>I saw the CDP’s logo on the front of a recent Pacific Institute report (see <a href="https://www.musclesofquartz.com/post/tuesday-water-reading/">post</a> from Tuesday), so I thought I’d check out their data. They’ve surveyed the water utilities of hundreds cities to characterize global urban water supply risks.</p>
+<p>I saw the CDP’s logo on the front of a recent Pacific Institute report (see <a href="https://www.musclesofquartz.com/post/tuesday-water-reading/">post</a> from Tuesday), so I thought I’d check out their data. They’ve surveyed the water utilities of hundreds of cities to characterize global urban water supply risks.</p>
 <p>Sounds promising…</p>
 <p>First I’m gonna load some libraries and download the dataset:</p>
 <pre class="r"><code>library(vroom)   # for data download
@@ -43,7 +43,7 @@ data %&gt;% count(risks_to_city_s_water_supply)</code></pre>
 ## 8 Regulatory                            18
 ## 9 Water losses                          17</code></pre>
 <p>So we have seven main risk types documented. The most common in the dataset are <em>declining water quality</em>, <em>flooding</em>, <em>bad infrastructure</em>, and <em>increasing water stress</em>.</p>
-<p>Each risk is categorized by each city according to its seriousness. This is where the survey became silly. Clearly a utility’s definition of “extremely serious” is completely context dependent; this problem will emerge in the final plot.</p>
+<p>Each risk has categorized by each reporting city utility according to seriousness. This is where the survey becomes silly. Clearly a utility’s definition of “extremely serious” is completely context dependent; this problem will emerge in the final plot.</p>
 <p>I want to identify the world’s top 20 high risk cities. So I’ve devised a simple scoring system based on number of risks and reported seriousness:</p>
 <p>(the data are quite messy, so please excuse the long-winded wrangle!)</p>
 <pre class="r"><code># get risks (remove unhelpful &quot;other&quot; category)
@@ -122,4 +122,4 @@ data_for_plot %&gt;%
 <p><img src="/post/2020-04-10-serious-bad-data-survey_files/figure-html/unnamed-chunk-2-1.png" width="672" /></p>
 <p>So the world’s number one highest risk city for water supply is… <strong>Torreón, Mexico</strong>. The Municipio de Torreón reported extremely serious risk for almost all categories. Then we cast the eye down the top 20 and find… <strong>Adelaide, Australia</strong> (5th highest water supply risk!!), <strong>Calgary, Canada</strong> (6th), <strong>Oakland, USA</strong> (7th)… you get the picture.</p>
 <p><em>Saskatoon faces greater water supply risk than Jakarta</em>.</p>
-<p>These data are clearly useless. A lot of work must have gone into contacting several hundred water utilities around the world. It’s a great shame that the survey team failed to collect any quantifiable statistics that would allow for a reasonable comparison of the water supply risks faced by the world’s cities.</p>
+<p>These data are clearly useless. A lot of work must have gone into contacting water utilities around the world. It’s a great shame that the survey team failed to collect any quantifiable statistics that would allow for a reasonable analysis of global city water supply risks.</p>

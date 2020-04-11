@@ -11,7 +11,7 @@ This weekend's data wrangle looks at the [CDP Cities Water Risks dataset](https:
 
 > *This dataset includes the urban risks to water supply as reported by cities in the 2018 CDP Cities questionnaire. Details of the risks alongside their magnitude of impact and timescale are included. For responses to other questions in 2018, please view the 2018 Full Cities dataset.*
 
-I saw the CDP's logo on the front of a recent Pacific Institute report (see [post](https://www.musclesofquartz.com/post/tuesday-water-reading/) from Tuesday), so I thought I'd check out their data. They've surveyed the water utilities of hundreds cities to characterize global urban water supply risks. 
+I saw the CDP's logo on the front of a recent Pacific Institute report (see [post](https://www.musclesofquartz.com/post/tuesday-water-reading/) from Tuesday), so I thought I'd check out their data. They've surveyed the water utilities of hundreds of cities to characterize global urban water supply risks.
 
 Sounds promising...
 
@@ -35,7 +35,7 @@ data %>% count(risks_to_city_s_water_supply)
 
 So we have seven main risk types documented. The most common in the dataset are *declining water quality*, *flooding*, *bad infrastructure*, and *increasing water stress*.
 
-Each risk is categorized by each city according to its seriousness. This is where the survey became silly. Clearly a utility's definition of "extremely serious" is completely context dependent; this problem will emerge in the final plot.
+Each risk has categorized by each reporting city utility according to seriousness. This is where the survey becomes silly. Clearly a utility's definition of "extremely serious" is completely context dependent; this problem will emerge in the final plot.
 
 I want to identify the world's top 20 high risk cities. So I've devised a simple scoring system based on number of risks and reported seriousness:
 
@@ -121,4 +121,4 @@ So the world's number one highest risk city for water supply is... **Torreón, M
 
 *Saskatoon faces greater water supply risk than Jakarta*.
 
-These data are clearly useless. A lot of work must have gone into contacting several hundred water utilities around the world. It's a great shame that the survey team failed to collect any quantifiable statistics that would allow for a reasonable comparison of the water supply risks faced by the world's cities.
+These data are clearly useless. A lot of work must have gone into contacting water utilities around the world. It's a great shame that the survey team failed to collect any quantifiable statistics that would allow for a reasonable analysis of global city water supply risks.
