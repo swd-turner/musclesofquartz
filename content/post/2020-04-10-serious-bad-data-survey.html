@@ -1,0 +1,125 @@
+---
+title: Weekend data wrangle - CDP water supply risk
+author: ~
+date: '2020-04-11'
+slug: serious-bad-data-survey
+categories: []
+tags: []
+description: Seriously flawed data
+---
+
+
+
+<p>This weekend’s data wrangle looks at the <a href="https://data.cdp.net/Water/2018-Cities-Water-Risks/j79t-an58">CDP Cities Water Risks dataset</a>.</p>
+<blockquote>
+<p><em>This dataset includes the urban risks to water supply as reported by cities in the 2018 CDP Cities questionnaire. Details of the risks alongside their magnitude of impact and timescale are included. For responses to other questions in 2018, please view the 2018 Full Cities dataset.</em></p>
+</blockquote>
+<p>I saw the CDP’s logo on the front of a recent Pacific Institute report (see <a href="https://www.musclesofquartz.com/post/tuesday-water-reading/">post</a> from Tuesday), so I thought I’d check out their data. They’ve surveyed the water utilities of hundreds cities to characterize global urban water supply risks.</p>
+<p>Sounds promising…</p>
+<p>First I’m gonna load some libraries and download the dataset:</p>
+<pre class="r"><code>library(vroom)   # for data download
+library(dplyr)   # for data wrangle
+library(purrr)   # for applying functions
+library(ggplot2) # for plotting
+
+# download data
+vroom(&quot;https://data.cdp.net/resource/qaye-zhaz.csv&quot;) %&gt;% 
+  # remove unnecessary columns
+  select(-access, -c40, -account_no) -&gt;
+  data
+
+# show summary of water supply risks in data
+data %&gt;% count(risks_to_city_s_water_supply)</code></pre>
+<pre><code>## # A tibble: 9 x 2
+##   risks_to_city_s_water_supply           n
+##   &lt;chr&gt;                              &lt;int&gt;
+## 1 Declining water quality              117
+## 2 Flooding                             121
+## 3 Higher water prices                   55
+## 4 Inadequate or aging infrastructure   114
+## 5 Increased water stress or scarcity   240
+## 6 Other                                 26
+## 7 &quot;Other &quot;                               1
+## 8 Regulatory                            18
+## 9 Water losses                          17</code></pre>
+<p>So we have seven main risk types documented. The most common in the dataset are <em>declining water quality</em>, <em>flooding</em>, <em>bad infrastructure</em>, and <em>increasing water stress</em>.</p>
+<p>Each risk is categorized by each city according to its seriousness. This is where the survey became silly. Clearly a utility’s definition of “extremely serious” is completely context dependent; this problem will emerge in the final plot.</p>
+<p>I want to identify the world’s top 20 high risk cities. So I’ve devised a simple scoring system based on number of risks and reported seriousness:</p>
+<p>(the data are quite messy, so please excuse the long-winded wrangle!)</p>
+<pre class="r"><code># get risks (remove unhelpful &quot;other&quot; category)
+risks &lt;- data[[&quot;risks_to_city_s_water_supply&quot;]] %&gt;% unique() %&gt;% 
+  .[!grepl(&quot;Other&quot;, .)]
+
+# run through all cities...
+# ... fill out holes in dataset with NA
+data %&gt;% pull(city) %&gt;% unique() %&gt;% 
+  map_dfr(function(city){
+    
+    filter(data, city == !! city) %&gt;% 
+      select(risk = risks_to_city_s_water_supply,
+             magnitude) -&gt; city_risks
+    
+    # deal with cases where a single city reports ...
+    # ... multiple risks in single risk category
+    city_risks %&gt;% count(risk, magnitude) %&gt;%
+      arrange(-n) %&gt;% 
+      split(.$risk) %&gt;%
+      map_dfr(function(x) x[1,]) %&gt;% 
+      select(-n) %&gt;% 
+      right_join(tibble(risk = risks),
+                 by = &quot;risk&quot;) %&gt;% 
+      # clean up NA vs &quot;NA&quot;
+      mutate(city = !!city,
+             magnitude = if_else(
+               is.na(magnitude) | magnitude == &quot;NA&quot;,
+               &quot;None&quot;, magnitude))
+  }) %&gt;% 
+  # make magnitude category a factor
+  # (this helps with plotting)
+  mutate(magnitude = factor(magnitude,
+                            levels = c(
+                              &quot;Extremely serious&quot;,
+                              &quot;Serious&quot;,
+                              &quot;Less serious&quot;,
+                              &quot;None&quot;
+                            ))) -&gt;
+  data_for_plot
+
+# color scheme for risk categories
+viridis::inferno(3, begin = 0.9, end = 0.5, direction = -1) -&gt; cols
+c(
+  &quot;Extremely serious&quot; = cols[1],
+  &quot;Serious&quot; = cols[2],
+  &quot;Less serious&quot; = cols[3],
+  &quot;None&quot; = &quot;white&quot;
+) -&gt; risk_palette
+
+# scoring to get top 20 highest risk cities
+data_for_plot %&gt;%
+  mutate(mag_score = case_when(
+    magnitude == &quot;Extremely serious&quot; ~ 3,
+    magnitude == &quot;Serious&quot; ~ 2,
+    magnitude == &quot;Less serios&quot; ~ 1,
+    TRUE ~ 0
+  )) %&gt;% 
+  group_by(city) %&gt;% 
+  summarise(risk_score = sum(mag_score)) %&gt;% 
+  arrange(-risk_score) %&gt;% top_n(20) -&gt;
+  top_20_city_risk
+
+data_for_plot %&gt;% 
+  filter(city %in% top_20_city_risk[[&quot;city&quot;]]) %&gt;% 
+  mutate(city = factor(city, levels = rev(top_20_city_risk[[&quot;city&quot;]]))) %&gt;% 
+  ggplot(aes(risk,city, fill = magnitude)) + 
+  geom_tile(col = &quot;black&quot;) + theme_classic() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1)) +
+  scale_fill_manual(values = risk_palette) +
+  labs(title = &quot;Top 20 cities by water supply risk&quot;,
+       subtitle = &quot;An analysis based on seriously flawed data&quot;,
+       caption = &quot;Source: https://data.cdp.net/resource/qaye-zhaz.csv&quot;,
+       fill = &quot;Risk magnitude&quot;,
+       y = NULL, x = NULL)</code></pre>
+<p><img src="/post/2020-04-10-serious-bad-data-survey_files/figure-html/unnamed-chunk-2-1.png" width="672" /></p>
+<p>So the world’s number one highest risk city for water supply is… <strong>Torreón, Mexico</strong>. The Municipio de Torreón reported extremely serious risk for almost all categories. Then we cast the eye down the top 20 and find… <strong>Adelaide, Australia</strong> (5th highest water supply risk!!), <strong>Calgary, Canada</strong> (6th), <strong>Oakland, USA</strong> (7th)… you get the picture.</p>
+<p><em>Saskatoon faces greater water supply risk than Jakarta</em>.</p>
+<p>These data are clearly useless. A lot of work must have gone into contacting several hundred water utilities around the world. It’s a great shame that the survey team failed to collect any quantifiable statistics that would allow for a reasonable comparison of the water supply risks faced by the world’s cities.</p>
