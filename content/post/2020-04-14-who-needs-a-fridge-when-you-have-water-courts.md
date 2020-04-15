@@ -13,7 +13,7 @@ This is an excerpt from a [fascinating archaeological study](https://www.pnas.or
 
 Here’s the lowdown.
 
-In Florida’s southwest coast there lived a Native American people known as the [Calusa](https://en.wikipedia.org/wiki/Calusa)—most notable for having developed a complex culture based on estuarine fisheries rather than agriculture. This new study provides compelling evidence for the function of their sophisticated engineering structures. Lacking refrigeration technology in a tropical climate—and being dependent on perishable fish—they needed a storage solution. So around 1300 AD they developed *water courts*—large-scale fish traps that regulate the tidy to provide storage for live fish. Two large water courts (perhaps 50 by 50m) were constructed at either side of a sea estuary and connected to a canal network, likely used to transport the fish catch landward.
+In Florida’s southwest coast there lived a Native American people known as the [Calusa](https://en.wikipedia.org/wiki/Calusa)—most notable for having developed a complex culture based on estuarine fisheries rather than agriculture. This new study provides compelling evidence for the function of their sophisticated engineering structures. Lacking refrigeration technology in a tropical climate—and being dependent on perishable fish—they needed an innovative food storage solution. So around 1300 AD they developed *water courts*—large-scale fish traps that regulate the tidy to provide a store for live fish. Two large water courts (perhaps 50m by 50m) were constructed at either side of a sea estuary and connected to a canal network, likely used to transport the fish catch landward.
 
 How important was this feat of hydrological engineering?
 
