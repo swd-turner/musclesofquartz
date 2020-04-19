@@ -1,7 +1,7 @@
 ---
 title: Drought special part 3. Deep deficit
 author: ~
-date: '2020-04-18'
+date: '2020-04-19'
 slug: drought-special-part-3-deep-deficit
 categories: []
 tags: []
