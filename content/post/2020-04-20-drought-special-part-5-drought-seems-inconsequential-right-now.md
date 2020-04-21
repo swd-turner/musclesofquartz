@@ -10,11 +10,11 @@ description: Today's COVID deaths same as 40 years of drought (and heat)
 
 > *In the United States, drought cost $250 billion in damages and killed nearly 3000 people between 1980 and 2020, making it the costliest natural disaster and the second most deadly one.*
 
-This was about as far as I made it on [fifth article in the recent Science drought series](https://science.sciencemag.org/content/368/6488/256). When I read these numbers, two thoughts sprang to mind.
+This was about as far as I made it into the [fifth article of the recent Science drought series](https://science.sciencemag.org/content/368/6488/256). When I read these numbers, two thoughts sprang to mind.
 
 ##### 1. Is drought really the second most deadly natural disaster in the United States?
 
-Tropical cyclones were clearly the most deadly (the death toll of Maria alone was close to 3,000). But I could not find any data to support the claim that droughts killed 3,000 people in the last 40 years. [This article](https://www.prb.org/disasters-by-type/) suggests drought **and heat** killed about 4,000 people between 1970 and 2010. But heat isn’t the same as drought. You can have a very hot (even dry) summer that kills people but isn’t necessarily associated with drought.
+Tropical cyclones were clearly the most deadly (the death toll of Maria alone was close to 3,000). But I could not find any data to support the claim that droughts killed 3,000 Americans in the last 40 years. [This article](https://www.prb.org/disasters-by-type/) suggests drought **and heat** killed about 4,000 Americans between 1970 and 2010. But heat isn’t the same as drought. You can have a very hot (even dry) summer that kills people but isn’t necessarily associated with drought.
 
 I could not find where the 3,000 estimate actually originates from. The citation provided is [Smith et al. (2015)](https://link.springer.com/article/10.1007/s11069-015-1678-x#citeas). No mention of deaths in that paper.
 
@@ -24,7 +24,7 @@ Let’s take these numbers at face value. So over the last four decades drought 
 
 The Coronavirus killed 2,492 Americans.
 
-That’s 2,492 americans killed today.
+That’s 2,492 Americans killed today.
 
 Today alone.
 
