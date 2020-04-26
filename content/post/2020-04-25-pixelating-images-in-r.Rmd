@@ -8,7 +8,7 @@ tags: []
 description: ...
 ---
 
-Hadley Wickham started [some banter on Twitter](https://twitter.com/hadleywickham/status/1253301474777616385") the other day by challenging folks to pixelate a meme using ggplot.
+Hadley Wickham started [some banter on Twitter](https://twitter.com/hadleywickham/status/1253301474777616385) the other day by challenging folks to pixelate a meme using ggplot.
 
 I thought I'd give it a try with some water-related images. Using the `imager` and `ggplot` libraries:
 
