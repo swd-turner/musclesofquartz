@@ -1,0 +1,37 @@
+---
+title: Pixelating images in R
+author: ~
+date: '2020-04-26'
+slug: pixelating-images-in-r
+categories: []
+tags: []
+description: ...
+---
+
+
+
+<p>Hadley Wickham started <a href="https://twitter.com/hadleywickham/status/1253301474777616385%22">some banter on Twitter</a> the other day by challenging folks to pixelate a meme using ggplot.</p>
+<p>I thought I’d give it a try with some water-related images. Using the <code>imager</code> and <code>ggplot</code> libraries:</p>
+<pre class="r"><code># load a random picture of Hoover Dam
+hoover_jpg &lt;- load.image(&quot;https://lvspydertours.com/images/hd-1.jpg&quot;)
+
+# plot it using ggplot
+ggplot(data.frame()) +  # just insert a blank data frame or tibble
+  annotation_custom(g = grid::rasterGrob(hoover_jpg, interpolate=TRUE)) +
+  theme_void()</code></pre>
+<p><img src="/post/2020-04-25-pixelating-images-in-r_files/figure-html/unnamed-chunk-2-1.png" width="672" /></p>
+<p>Now I’m gonna pixelate it.</p>
+<pre class="r"><code># resize to pixelate
+hoover &lt;- resize(hoover_jpg,
+                 round(width(hoover_jpg)/10),
+                 round(height(hoover_jpg)/10))
+
+# plot
+ggplot(data.frame()) +
+  annotation_custom(g = grid::rasterGrob(hoover, interpolate=TRUE)) +
+  theme_void()</code></pre>
+<p><img src="/post/2020-04-25-pixelating-images-in-r_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
+<p>How about the Amazon?</p>
+<p><img src="/post/2020-04-25-pixelating-images-in-r_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
+<p>Cannon Beach, Oregon. (you recognize it from the final scene of The Goonies)
+<img src="/post/2020-04-25-pixelating-images-in-r_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>

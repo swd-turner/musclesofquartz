@@ -1,0 +1,70 @@
+---
+title: Pixelating images in R
+author: ~
+date: '2020-04-26'
+slug: pixelating-images-in-r
+categories: []
+tags: []
+description: ...
+---
+
+Hadley Wickham started [some banter on Twitter](https://twitter.com/hadleywickham/status/1253301474777616385") the other day by challenging folks to pixelate a meme using ggplot.
+
+I thought I'd give it a try with some water-related images. Using the `imager` and `ggplot` libraries:
+
+```{r, echo = F, message = FALSE}
+library(imager, quietly = TRUE)
+library(ggplot2, quietly = TRUE)
+```
+
+```{r}
+# load a random picture of Hoover Dam
+hoover_jpg <- load.image("https://lvspydertours.com/images/hd-1.jpg")
+
+# plot it using ggplot
+ggplot(data.frame()) +  # just insert a blank data frame or tibble
+  annotation_custom(g = grid::rasterGrob(hoover_jpg, interpolate=TRUE)) +
+  theme_void()
+```
+
+Now I'm gonna pixelate it.
+
+```{r}
+# resize to pixelate
+hoover <- resize(hoover_jpg,
+                 round(width(hoover_jpg)/10),
+                 round(height(hoover_jpg)/10))
+
+# plot
+ggplot(data.frame()) +
+  annotation_custom(g = grid::rasterGrob(hoover, interpolate=TRUE)) +
+  theme_void()
+```
+
+How about the Amazon?
+
+```{r, echo = FALSE}
+
+amazon_jpeg <- load.image("https://www.thesun.co.uk/wp-content/uploads/2017/03/nintchdbpict000307183241.jpg?w=1240")
+amazon <- resize(amazon_jpeg,
+                 round(width(amazon_jpeg)/20),
+                 round(height(amazon_jpeg)/20))
+
+ggplot(data.frame()) +
+  annotation_custom(g = grid::rasterGrob(amazon, interpolate=TRUE)) +
+  theme_void()
+```
+
+Cannon Beach, Oregon. (you recognize it from the final scene of The Goonies)
+```{r, echo = FALSE}
+cannon_beach_jpg <- load.image("https://www.pacific-coast-highway-travel.com/images/xcannon_beach_tourism-photo-2.jpg.pagespeed.ic.08zT4bWdQw.jpg")
+
+cannon_beach <- resize(cannon_beach_jpg,
+                       round(width(cannon_beach_jpg)/20),
+                       round(height(cannon_beach_jpg)/20))
+
+ggplot(data.frame()) +
+  annotation_custom(g = grid::rasterGrob(cannon_beach, interpolate=TRUE)) +
+  theme_void()
+```
+
