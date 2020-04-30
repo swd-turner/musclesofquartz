@@ -15,7 +15,7 @@ I recently discovered the "Words on Water" podcast. I thought I'd take a look ar
 - Discussions with CEOs, managers, young professionals, etc.
 - Strong focus on communication of water and water issues
 
-#### 2. [Words on Water]() by the Water Environment Federation.
+#### 2. [Words on Water](https://wordsonwaterwef.com) by the Water Environment Federation.
 > *A podcast featuring conversations with influential and interesting people from the water sector*
 
 - New episodes every few days.
