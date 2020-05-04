@@ -1,0 +1,96 @@
+---
+title: Glacier data wrangle
+author: ~
+date: '2020-05-04'
+slug: a-look-at-glacier-projections
+categories: []
+tags: []
+description: Plotting the new Bosson et al. data
+---
+
+
+
+<p>Shout out to Jean Baptiste Bosson and colleagues for their recent paper in Earth’s Future, complete with a nice open dataset of global glacier area and volume projections.</p>
+<p>Let’s wrangle ’em in <code>R</code>.</p>
+<p>Note that I’ve downloaded two datasets for this analysis:</p>
+<div id="us-national-park-boundary-shapefile" class="section level6">
+<h6>1. <a href="https://public-nps.opendata.arcgis.com/datasets/nps-boundary-1">US National Park boundary shapefile</a></h6>
+</div>
+<div id="bosson-et-al.natural-world-heritage-site-glacier-projections" class="section level6">
+<h6>2. <a href="https://agupubs.onlinelibrary.wiley.com/doi/full/10.1029/2018EF001139">Bosson et al. Natural World Heritage Site Glacier projections</a></h6>
+<p>First step: load some libraries…</p>
+<pre class="r"><code>library(sf)      # for shape files
+library(vroom)   # for .dat files
+library(tmap)    # for map plotting
+library(dplyr)   # for wrangling
+library(purrr)   # for mapping through files
+library(ggplot2) # for plotting</code></pre>
+<p>Next I’m loading two shape files…</p>
+<pre class="r"><code># Glacier for Olympic National Park
+st_read(paste0(
+  &quot;../../../Large data files/&quot;,
+  &quot;Earths_Future_2019_bosson_al_data/&quot;,
+  &quot;RGI6.0 shapefiles of Glaciers in Natural World Heritage Sites in 2018/&quot;,
+  &quot;19_Olympic_National_Park.shp&quot;
+  ), quiet = TRUE) -&gt; glacier_shape
+
+# Shapefile for National Park boundaries
+st_read(paste0(
+  &quot;../../../Large data files/&quot;,
+  &quot;NPS_-_Land_Resources_Division_Boundary_and_Tract_Data_Service/&quot;,
+  &quot;622305c9-fb01-40e6-97ac-f68aca551c38202034-1-xpq6gt.ugbbb.shp&quot;
+  ), quiet = TRUE) %&gt;%
+  subset(PARKNAME == &quot;Olympic&quot;) -&gt;
+  Olympic_np
+
+# test for same coordinate reference system?
+st_crs(glacier_shape) == st_crs(Olympic_np)</code></pre>
+<pre><code>## [1] TRUE</code></pre>
+<pre class="r"><code># plot
+tm_shape(Olympic_np) +
+  tm_polygons(col = &quot;lightgrey&quot;) +
+  tm_shape(glacier_shape) +
+  tm_polygons(col = &quot;blue&quot;,
+              border.col = NULL) +
+  tm_layout(frame = FALSE,
+            title = &quot;Olympic National Park Glaciers&quot;)</code></pre>
+<p><img src="/post/2020-05-03-a-look-at-glacier-projections_files/figure-html/unnamed-chunk-2-1.png" width="672" /></p>
+<p>So we can see some limited glaciation in Olympic National Park.</p>
+<p>What’s going to happen to those glaciers this century?</p>
+<p>Now for the Bosson et al. simulations…</p>
+<pre class="r"><code># get file location
+paste0(
+  &quot;../../../Large data files/&quot;,
+  &quot;Earths_Future_2019_bosson_al_data/&quot;,
+  &quot;Glacier Modelling by World Heritage Site/&quot;,
+  &quot;Olympic_National_Park/19_total_Volume_&quot;
+  ) -&gt; file_loc
+  
+# map through available rcps
+c(&quot;rcp26&quot;, &quot;rcp45&quot;, &quot;rcp85&quot;) %&gt;% 
+  map_dfr(function(rcp){
+    # this part is a little funky...
+    # ... cos the header and data delims are...
+    # ... inconsistent in these .dat files !
+    vroom(paste0(file_loc, rcp, &quot;.dat&quot;),
+          skip = 1, col_names = F,
+          delim = &quot;       &quot;, col_types = cols()) %&gt;% 
+      select(year = X1, mean = X2, sd = X3) %&gt;% 
+      mutate(rcp = !!rcp)
+  }) -&gt; glac_volume_series
+
+# wrangle for ribbon plot
+glac_volume_series %&gt;% 
+  mutate(max_ = mean + sd, min_ = mean - sd) %&gt;% 
+  ggplot(aes(x = year, fill = rcp)) +
+  geom_ribbon(aes(ymax = max_, ymin = min_),
+              alpha = 0.5) +
+  theme_classic() +
+  labs(title = &quot;Volume of glaciers in Olympic National Park (cubic km)&quot;,
+       x = NULL)</code></pre>
+<p><img src="/post/2020-05-03-a-look-at-glacier-projections_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
+<p>Bye bye Olympic National Park glaciers :(</p>
+<p>May the 4th be with you.</p>
+<p>Citation:
+<strong>Bosson, JB, Huss, M &amp; Osipova E (2019). Dataset of the paper Disappearing World Heritage glaciers as a keystone of nature conservation in a changing system, Earth’s Future.</strong></p>
+</div>
