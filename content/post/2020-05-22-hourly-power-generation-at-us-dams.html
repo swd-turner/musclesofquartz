@@ -1,0 +1,107 @@
+---
+title: Hourly power generation at US dams
+author: ~
+date: '2020-05-23'
+slug: hourly-power-generation-at-us-dams
+categories: []
+tags: []
+description: How to access hourly generation data for US dams
+---
+
+
+
+<p>Some time ago I sent out a <a href="https://twitter.com/sean_turner/status/1241041657874624513">message to energy Twitter</a> to see whether hourly-resolution data for US dams are publicly available anywhere.</p>
+<p>I had no luck, but since then I’ve come across a couple of useful resources. It’s possible to get hourly generation (MW) records for a handful of dams in the Columbia River Basin though the US Army Corps of Engineers. And you can powered releases (cfs) handful of dams in the Upper Colorado via the US Bureau of Reclamation. Powered release is simply the flow through the turbines. This isn’t quite the same as generation, but one can reasonably estimate generation from release with knowledge of hydraulic head and turbine efficiency.</p>
+<p>Here’s a quick tutorial for how to download and wrangle both datasets.</p>
+<div id="usace-power-generation-records-pacific-northwest" class="section level3">
+<h3>1. USACE power generation records (Pacific Northwest)</h3>
+<p>If you search the <a href="https://www.nwd-wc.usace.army.mil/dd/common/dataquery/www/">USACE data portal</a> for “Grand Coulee” you’ll be presented with an option “Grand Coulee Dam (GCL)”. The three letter code “GCL” is the key here, as we can sub out these letters in the following example to achieve the same thing for various other dams on the Columbia (e.g., “CHJ” = Cheif Joseph, “PRD” = Priest Rapids, and so on). If you click on “Grand Coulee Dam (GCL)” there will be an option <code>GCL.Power.Total.1Hour.1Hour.CBT-RAW]</code>. This is key, too—and again we can sub this out for other variables of interest (inflow, release, storage, and so on).</p>
+<pre class="r"><code># load required libraries
+library(vroom)     # for downloading data
+library(dplyr)     # for wrangling
+library(lubridate) # for dates
+library(ggplot2)    # for plots
+
+# set up components of url to download from
+base_url &lt;- &quot;http://www.nwd-wc.usace.army.mil/dd/common/web_service/webexec/ecsv?id=&quot;
+units &lt;- &quot;%3Aunits%3DMW&amp;headers=true&amp;filename=&amp;&quot;
+
+# specify start and end date/time part of the url (example is April 2020)
+period &lt;- &quot;startdate=04%2F01%2F2020&amp;enddate=04%2F30%2F2020&quot;
+
+data_request &lt;- &quot;GCL.Power.Total.1Hour.1Hour.CBT-RAW&quot;
+vroom(paste0(base_url,
+             data_request,
+             units, period),
+          col_types = cols()) %&gt;% 
+      mutate(`Date Time` = dmy_hm(`Date Time`)) -&gt; raw_data
+
+head(raw_data)</code></pre>
+<pre><code>## # A tibble: 6 x 2
+##   `Date Time`         `GCL.Power.Total.1Hour.1Hour.CBT-RAW [MW]`
+##   &lt;dttm&gt;                                                   &lt;dbl&gt;
+## 1 2020-03-31 16:00:00                                        709
+## 2 2020-03-31 17:00:00                                       1078
+## 3 2020-03-31 18:00:00                                       1540
+## 4 2020-03-31 19:00:00                                       1730
+## 5 2020-03-31 20:00:00                                       1725
+## 6 2020-03-31 21:00:00                                       1679</code></pre>
+<p>Now a simple time series plot:</p>
+<pre class="r"><code>raw_data %&gt;% 
+  rename(Generation_MW = `GCL.Power.Total.1Hour.1Hour.CBT-RAW [MW]`) %&gt;% 
+  ggplot(aes(`Date Time`, Generation_MW)) +
+  geom_line() + theme_classic() +
+  labs(y = NULL, x = NULL, title = &quot;Grand Coulee Hourly Generation (MW)&quot;,
+  subtitle = &quot;April 2020&quot;)</code></pre>
+<p><img src="/post/2020-05-22-hourly-power-generation-at-us-dams_files/figure-html/unnamed-chunk-2-1.png" width="672" /></p>
+</div>
+<div id="usbr-powered-flow-records-upper-colorado" class="section level3">
+<h3>2. USBR powered flow records (Upper Colorado)</h3>
+<p>For the Upper Colorado I’m first gonna scrape a metadata file that tells me which dams actually have power releases available…</p>
+<pre class="r"><code>vroom(&quot;https://www.usbr.gov/uc/water/hydrodata/reservoir_data/meta.csv&quot;) %&gt;% 
+  filter(datatype_metadata.datatype_common_name == &quot;power release&quot;) %&gt;% 
+  select(data_id = site_datatype_id,
+         site = site_metadata.site_common_name) -&gt;
+  all_sites_with_power
+
+all_sites_with_power</code></pre>
+<pre><code>## # A tibble: 10 x 2
+##    data_id site         
+##      &lt;dbl&gt; &lt;chr&gt;        
+##  1    1857 BLUE MESA    
+##  2    1858 MORROW POINT 
+##  3    1859 CRYSTAL      
+##  4    1860 FONTENELLE   
+##  5    1861 FLAMING GORGE
+##  6    1862 LAKE POWELL  
+##  7    1864 PINEVIEW     
+##  8    1865 DEER CREEK   
+##  9    2217 NAVAJO       
+## 10   21264 JORDANELLE</code></pre>
+<p>So we have hourly data for ten dams. Let’s get all of ’em at the same time using <code>purrr::pmap</code></p>
+<pre class="r"><code>data_url_start &lt;- &quot;https://www.usbr.gov/pn-bin/hdb/hdb.pl?svr=uchdb2&amp;sdi=&quot;
+data_url_end &lt;- &quot;&amp;tstp=HR&amp;t1=2020-04-01T00:00&amp;t2=2020-04-30T00:00&amp;table=R&amp;mrid=0&amp;format=88&quot;
+
+library(purrr)
+
+all_sites_with_power %&gt;% 
+  pmap_dfr(
+    function(data_id, site){
+      vroom(paste0(
+        data_url_start, data_id, data_url_end
+      ), col_types = cols(), delim = &quot;,&quot;) -&gt; x
+      names(x) &lt;- c(&quot;date_time&quot;, &quot;Average_Power_Release_CFS&quot;)
+      x %&gt;% mutate(date_time = mdy_hm(date_time),
+                   dam = site)
+    }
+      ) -&gt; powered_releases_all_dams</code></pre>
+<p>Now plot…</p>
+<pre class="r"><code>powered_releases_all_dams %&gt;% 
+  ggplot(aes(date_time, Average_Power_Release_CFS)) +
+  geom_line() + facet_wrap(~dam, scales = &quot;free&quot;, ncol = 2) +
+  theme_classic() + labs(x = NULL)</code></pre>
+<pre><code>## Warning: Removed 1394 row(s) containing missing values (geom_path).</code></pre>
+<p><img src="/post/2020-05-22-hourly-power-generation-at-us-dams_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
+<p>Ok, so it looks like a bunch are missing data for last month, but dig deeper into history and you’ll find data for all these sites going years back.</p>
+<p>Enjoy.</p>
+</div>

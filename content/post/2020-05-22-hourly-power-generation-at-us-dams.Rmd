@@ -1,0 +1,109 @@
+---
+title: Hourly power generation at US dams
+author: ~
+date: '2020-05-23'
+slug: hourly-power-generation-at-us-dams
+categories: []
+tags: []
+description: How to access hourly generation data for US dams
+---
+
+Some time ago I sent out a [message to energy Twitter](https://twitter.com/sean_turner/status/1241041657874624513) to see whether hourly-resolution data for US dams are publicly available anywhere.
+
+I had no luck, but since then I've come across a couple of useful resources. It's possible to get hourly generation (MW) records for a handful of dams in the Columbia River Basin though the US Army Corps of Engineers. And you can powered releases (cfs) handful of dams in the Upper Colorado via the US Bureau of Reclamation. Powered release is simply the flow through the turbines. This isn't quite the same as generation, but one can reasonably estimate generation from release with knowledge of hydraulic head and turbine efficiency.
+
+Here's a quick tutorial for how to download and wrangle both datasets.
+
+### 1. USACE power generation records (Pacific Northwest)
+
+If you search the [USACE data portal](https://www.nwd-wc.usace.army.mil/dd/common/dataquery/www/) for "Grand Coulee" you'll be presented with an option "Grand Coulee Dam (GCL)". The three letter code "GCL" is the key here, as we can sub out these letters in the following example to achieve the same thing for various other dams on the Columbia (e.g., "CHJ" = Cheif Joseph, "PRD" = Priest Rapids, and so on). If you click on "Grand Coulee Dam (GCL)" there will be an option `GCL.Power.Total.1Hour.1Hour.CBT-RAW]`. This is key, too---and again we can sub this out for other variables of interest (inflow, release, storage, and so on).
+
+```{r, message = F}
+# load required libraries
+library(vroom)     # for downloading data
+library(dplyr)     # for wrangling
+library(lubridate) # for dates
+library(ggplot2)    # for plots
+
+# set up components of url to download from
+base_url <- "http://www.nwd-wc.usace.army.mil/dd/common/web_service/webexec/ecsv?id="
+units <- "%3Aunits%3DMW&headers=true&filename=&"
+
+# specify start and end date/time part of the url (example is April 2020)
+period <- "startdate=04%2F01%2F2020&enddate=04%2F30%2F2020"
+
+data_request <- "GCL.Power.Total.1Hour.1Hour.CBT-RAW"
+vroom(paste0(base_url,
+             data_request,
+             units, period),
+          col_types = cols()) %>% 
+      mutate(`Date Time` = dmy_hm(`Date Time`)) -> raw_data
+
+head(raw_data)
+```
+
+Now a simple time series plot:
+
+```{r}
+raw_data %>% 
+  rename(Generation_MW = `GCL.Power.Total.1Hour.1Hour.CBT-RAW [MW]`) %>% 
+  ggplot(aes(`Date Time`, Generation_MW)) +
+  geom_line() + theme_classic() +
+  labs(y = NULL, x = NULL, title = "Grand Coulee Hourly Generation (MW)",
+  subtitle = "April 2020")
+```
+
+
+
+### 2. USBR powered flow records (Upper Colorado)
+
+For the Upper Colorado I'm first gonna scrape a metadata file that tells me which dams actually have power releases available...
+
+```{r, message = F}
+vroom("https://www.usbr.gov/uc/water/hydrodata/reservoir_data/meta.csv") %>% 
+  filter(datatype_metadata.datatype_common_name == "power release") %>% 
+  select(data_id = site_datatype_id,
+         site = site_metadata.site_common_name) ->
+  all_sites_with_power
+
+all_sites_with_power
+```
+
+So we have hourly data for ten dams. Let's get all of 'em at the same time using `purrr::pmap`
+
+```{r, message = FALSE}
+data_url_start <- "https://www.usbr.gov/pn-bin/hdb/hdb.pl?svr=uchdb2&sdi="
+data_url_end <- "&tstp=HR&t1=2020-04-01T00:00&t2=2020-04-30T00:00&table=R&mrid=0&format=88"
+
+library(purrr)
+
+all_sites_with_power %>% 
+  pmap_dfr(
+    function(data_id, site){
+      vroom(paste0(
+        data_url_start, data_id, data_url_end
+      ), col_types = cols(), delim = ",") -> x
+      names(x) <- c("date_time", "Average_Power_Release_CFS")
+      x %>% mutate(date_time = mdy_hm(date_time),
+                   dam = site)
+    }
+      ) -> powered_releases_all_dams
+```
+
+Now plot...
+
+```{r, message = F, fig.height = 10}
+powered_releases_all_dams %>% 
+  ggplot(aes(date_time, Average_Power_Release_CFS)) +
+  geom_line() + facet_wrap(~dam, scales = "free", ncol = 2) +
+  theme_classic() + labs(x = NULL)
+```
+
+Ok, so it looks like a bunch are missing data for last month, but dig deeper into history and you'll find data for all these sites going years back.
+
+Enjoy.
+
+
+
+
+
