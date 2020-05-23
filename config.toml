@@ -47,7 +47,7 @@ pygmentsUseClasses = true
 	description = "Muscles of Quartz"
 	images = ["site-feature-image.jpg"]
 	# Site's Tagline (Subtitle or Keyword)
-	tagline = "a daily blog for water resources infovores"
+	tagline = "R code for handling water resources data"
 	# If true give attribution to this theme
 	themeAttrib = true
 	# URL to license file, can be outside of your domain
@@ -73,9 +73,9 @@ pygmentsUseClasses = true
 	sub404 = "Back to <a href='/'>Home</a>."
 
 	# Color of your website's accent
-	colorTheme = "#ff6565"
+	colorTheme = "dodgerblue"
 	# Maximum number of item in Latest Posts or Works
-	latestCount = 50
+	latestCount = 10
 	# Path to site's favicon image
 	faviconImg = ""
 	# Date format in item list
