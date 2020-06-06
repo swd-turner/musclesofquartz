@@ -1,0 +1,109 @@
+---
+title: Global hydropower scenarios revisited
+author: ~
+date: '2020-06-06'
+slug: global-hydropower-scenarios
+categories: []
+tags: []
+description: Download and wrange hydropower projections for 1593 dams globally
+---
+
+
+
+<p>I published a <a href="https://www.sciencedirect.com/science/article/pii/S0048969717305272">paper in 2017</a> that analyzes monthly resolution projections of global hydropower production under climate change. Recently some folks have asked me for this data. Unfortunately the formatting is horrible, so I’m providing this tutorial to absolve past sins.</p>
+<p>For this tutorial I’m going to download these data and aggregate to country-scale, monthly time series of projected generation (shout out to Febin Kachirayil for this request).</p>
+<p>First, we’re gonna need the IDs and associated countries for each dam of the Global Reservoir and Dams Database. You can download this from <a href="http://globaldamwatch.org/data/#core_global">here</a>.</p>
+<p>We wanna grab the just the data table contained in the shape file <code>GRanD_dams_v1_1.shp</code></p>
+<pre class="r"><code># load libraries
+library(dplyr)  # for data wrangling
+library(rgdal)  # for reading shape file data
+
+# get GRanD data table
+readOGR(paste0(your_GRanD_dir,
+               &quot;/GRanD_dams_v1_1.shp&quot;)) %&gt;% 
+  .@data %&gt;% 
+  # ^^ extract data table from shape object
+  as_tibble() %&gt;% 
+  select(GRAND_ID, DAM_NAME, COUNTRY) -&gt;
+  grand_data</code></pre>
+<pre><code>## OGR data source with driver: ESRI Shapefile 
+## Source: &quot;/Users/turn652/Documents/IM3/WM development/GRanD/GRanD download/GRanD_dams_v1_1.shp&quot;, layer: &quot;GRanD_dams_v1_1&quot;
+## with 6862 features
+## It has 56 fields
+## Integer64 fields read as strings:  DIS_AVG_LS</code></pre>
+<pre class="r"><code>grand_data</code></pre>
+<pre><code>## # A tibble: 6,862 x 3
+##    GRAND_ID DAM_NAME       COUNTRY      
+##       &lt;int&gt; &lt;chr&gt;          &lt;chr&gt;        
+##  1        1 Terror Lake    United States
+##  2        2 Mayo           Canada       
+##  3        3 Blue Lake      United States
+##  4        4 Green Lake     United States
+##  5        5 Long Lake Dam  United States
+##  6        6 W.A.C. Bennett Canada       
+##  7        7 Peace Canyon   Canada       
+##  8        8 Swan Lake      United States
+##  9        9 Anyox          Canada       
+## 10       10 Upper Silvis   United States
+## # … with 6,852 more rows</code></pre>
+<p>Now let’s connect these IDs to the simulation data. These are currently stored in a dedicated GitHub repo <a href="%22https://github.com/swd-turner/HydroSimGlobal/%22">here</a>.</p>
+<pre class="r"><code>data_dir &lt;- &quot;https://raw.githubusercontent.com/swd-turner/HydroSimGlobal/master/&quot;</code></pre>
+<p>The first file we need is <code>GRanD_ID.csv</code>. This is gonna help us to index through lists of data to extract data for relevant dams.</p>
+<pre class="r"><code>library(vroom)  # for data reading
+index &lt;- vroom(paste0(data_dir, &quot;GRanD_ID.csv&quot;), delim = &quot;,&quot;)
+
+# join up the index to the grand data
+index %&gt;% left_join(grand_data, by = c(&quot;GRanD_ID&quot; = &quot;GRAND_ID&quot;)) -&gt;
+  index_grand</code></pre>
+<p>Now we wanna get the actual simulation data. These are in R list format and are pickled in .RData files (I warned you this wasn’t pretty). There are 1593 elements to these lists, each representing a dam. Each of these elements is itself a list, containing various simulation data for the relevant dam (generation, water storage, reservoir levels, etc.). Compounding matters further, the data are stored as <code>ts</code> (time series) objects—a format that is rarely used today.</p>
+<p>We can use base functions <code>url</code> and <code>load</code> to get this data straight into our environment:</p>
+<pre class="r"><code># url for GCM forced simulations with CNRM under A2 emissions scenario
+data_url &lt;- url(paste0(data_dir, &quot;/GCM-forced%20simulations/CNRM/cnrm_A2&quot;))
+load(data_url)</code></pre>
+<p>Now a list object named <code>cnrm_A2</code> should appear in your environment. If we look at the first element we see a list of six time series 2001 to 2100:</p>
+<pre class="r"><code>str(cnrm_A2[[1]])</code></pre>
+<pre><code>## List of 6
+##  $ Storage_Mm^3    : Time-Series [1:1200] from 2001 to 2101: 74300 73271 72995 71227 67589 ...
+##  $ Release_Mm^3    : Time-Series [1:1200] from 2001 to 2101: 2542 1525 2796 4575 1271 ...
+##  $ Evaporation_Mm^3: Time-Series [1:1200] from 2001 to 2101: 2.10e-04 3.97e-01 4.71 1.95e+01 1.28e+02 ...
+##  $ WaterLevel_m    : Time-Series [1:1200] from 2001 to 2101: 184 183 183 182 180 ...
+##  $ Spill_Mm^3      : Time-Series [1:1200] from 2001 to 2101: 0 0 0 0 0 0 0 0 0 0 ...
+##  $ Power_MW        : Time-Series [1:1200] from 2001 to 2101: 1363 816 1490 2413 666 ...</code></pre>
+<p>From <code>index_grand</code>, created earlier, we see that this first element (index = 1) of <code>cnrm_A2</code> corresponds to GRanD ID 6 (or the dam W.A.C. Bennett, Canada). So now we’re gonna cycle through all the countries of that table, pick out all the relevant indices, extract the simulated generation (<code>Power_MW</code>) for those indices, and finally, aggregate to country-level generation (MWh).</p>
+<p>This will require <code>purrr::map</code>.</p>
+<pre class="r"><code>library(purrr)
+
+index_grand %&gt;% split(.$COUNTRY) %&gt;%
+  map_dfr(function(x){
+    x %&gt;% pull(COUNTRY) %&gt;% first() -&gt; country
+    x %&gt;% pull(Index) %&gt;% 
+      map_dfr(
+        function(dam){
+          cnrm_A2[[dam]] %&gt;% .$Power_MW %&gt;%
+            tibble(gen = ., time = time(.)) %&gt;% 
+            mutate(gen = as.double(gen) * 732) %&gt;%
+            # ^^ 732 is approx hrs per month to convert MW to MWh
+            mutate(year = as.integer(substr(time, 1, 4)),
+                   month = factor(rep(month.abb, 100), levels = month.abb),
+                   index = dam) %&gt;% 
+            select(index, year, month, gen_MWh = gen)
+        }
+      ) %&gt;% mutate(country = !!country) %&gt;% 
+      group_by(country, year, month) %&gt;% 
+      summarise(gen_MWh = sum(gen_MWh)) %&gt;% ungroup()
+  })</code></pre>
+<pre><code>## # A tibble: 128,400 x 4
+##    country      year month gen_MWh
+##    &lt;chr&gt;       &lt;int&gt; &lt;fct&gt;   &lt;dbl&gt;
+##  1 Afghanistan  2001 Jan    67015.
+##  2 Afghanistan  2001 Feb    81655.
+##  3 Afghanistan  2001 Mar    81655.
+##  4 Afghanistan  2001 Apr    81655.
+##  5 Afghanistan  2001 May    81655.
+##  6 Afghanistan  2001 Jun    60081.
+##  7 Afghanistan  2001 Jul    52977.
+##  8 Afghanistan  2001 Aug    29872.
+##  9 Afghanistan  2001 Sep    17176.
+## 10 Afghanistan  2001 Oct    15815.
+## # … with 128,390 more rows</code></pre>
+<p>Lesson: provide data as netcdf or plain old csv in future.</p>

@@ -1,0 +1,106 @@
+---
+title: Global hydropower scenarios revisited
+author: ~
+date: '2020-06-06'
+slug: global-hydropower-scenarios
+categories: []
+tags: []
+description: Download and wrange hydropower projections for 1593 dams globally
+---
+I published a [paper in 2017](https://www.sciencedirect.com/science/article/pii/S0048969717305272) that analyzes monthly resolution projections of global hydropower production under climate change. Recently some folks have asked me for this data. Unfortunately the formatting is horrible, so I'm providing this tutorial to absolve past sins.
+
+For this tutorial I'm going to download these data and aggregate to country-scale, monthly time series of projected generation (shout out to Febin Kachirayil for this request).
+
+First, we're gonna need the IDs and associated countries for each dam of the Global Reservoir and Dams Database. You can download this from [here](http://globaldamwatch.org/data/#core_global).
+
+We wanna grab the just the data table contained in the shape file `GRanD_dams_v1_1.shp`
+
+```{r, echo = FALSE}
+your_GRanD_dir  <-"../../../Documents/IM3/WM development/GRanD/GRanD download"
+```
+
+```{r, message = FALSE, show = FALSE}
+# load libraries
+library(dplyr)  # for data wrangling
+library(rgdal)  # for reading shape file data
+
+# get GRanD data table
+readOGR(paste0(your_GRanD_dir,
+               "/GRanD_dams_v1_1.shp")) %>% 
+  .@data %>% 
+  # ^^ extract data table from shape object
+  as_tibble() %>% 
+  select(GRAND_ID, DAM_NAME, COUNTRY) ->
+  grand_data
+
+grand_data
+```
+
+Now let's connect these IDs to the simulation data. These are currently stored in a dedicated GitHub repo [here]("https://github.com/swd-turner/HydroSimGlobal/").
+
+```{r}
+data_dir <- "https://raw.githubusercontent.com/swd-turner/HydroSimGlobal/master/"
+```
+
+The first file we need is `GRanD_ID.csv`. This is gonna help us to index through lists of data to extract data for relevant dams.
+
+```{r, show = FALSE, message = FALSE}
+library(vroom)  # for data reading
+index <- vroom(paste0(data_dir, "GRanD_ID.csv"), delim = ",")
+
+# join up the index to the grand data
+index %>% left_join(grand_data, by = c("GRanD_ID" = "GRAND_ID")) ->
+  index_grand
+```
+
+Now we wanna get the actual simulation data. These are in R list format and are pickled in .RData files (I warned you this wasn't pretty). There are 1593 elements to these lists, each representing a dam. Each of these elements is itself a list, containing various simulation data for the relevant dam (generation, water storage, reservoir levels, etc.). Compounding matters further, the data are stored as `ts` (time series) objects---a format that is rarely used today.
+
+We can use base functions `url` and `load` to get this data straight into our environment:
+
+```{r}
+# url for GCM forced simulations with CNRM under A2 emissions scenario
+data_url <- url(paste0(data_dir, "/GCM-forced%20simulations/CNRM/cnrm_A2"))
+load(data_url)
+```
+
+Now a list object named `cnrm_A2` should appear in your environment. If we look at the first element we see a list of six time series 2001 to 2100:
+
+```{r}
+str(cnrm_A2[[1]])
+```
+
+From `index_grand`, created earlier, we see that this first element (index = 1) of `cnrm_A2` corresponds to GRanD ID 6 (or the dam W.A.C. Bennett, Canada). So now we're gonna cycle through all the countries of that table, pick out all the relevant indices, extract the simulated generation (`Power_MW`) for those indices, and finally, aggregate to country-level generation (MWh).
+
+This will require `purrr::map`.
+
+```{r}
+library(purrr)
+
+index_grand %>% split(.$COUNTRY) %>%
+  map_dfr(function(x){
+    x %>% pull(COUNTRY) %>% first() -> country
+    x %>% pull(Index) %>% 
+      map_dfr(
+        function(dam){
+          cnrm_A2[[dam]] %>% .$Power_MW %>%
+            tibble(gen = ., time = time(.)) %>% 
+            mutate(gen = as.double(gen) * 732) %>%
+            # ^^ 732 is approx hrs per month to convert MW to MWh
+            mutate(year = as.integer(substr(time, 1, 4)),
+                   month = factor(rep(month.abb, 100), levels = month.abb),
+                   index = dam) %>% 
+            select(index, year, month, gen_MWh = gen)
+        }
+      ) %>% mutate(country = !!country) %>% 
+      group_by(country, year, month) %>% 
+      summarise(gen_MWh = sum(gen_MWh)) %>% ungroup()
+  })
+
+```
+
+
+
+
+
+Lesson: provide data as netcdf or plain old csv in future.
+
