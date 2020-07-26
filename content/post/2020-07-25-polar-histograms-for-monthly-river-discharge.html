@@ -1,0 +1,78 @@
+---
+title: Coxcomb charts for monthly river discharge
+author: ~
+date: '2020-07-25'
+slug: coxcomb-charts-for-monthly-river-discharge
+categories: []
+tags: []
+description: About the page
+---
+
+
+
+<p>Here’s a beautiful example of a Coxcomb visualization for monthly mean river discharge:</p>
+<p><img src="/images/swiss_coxcomb.jpeg" /></p>
+<p>I saw this on Twitter recently, <a href="https://twitter.com/myweather_ch/status/1286211789143891979">here</a> (shout out to <a href="https://twitter.com/myweather_ch">Matthias Sänger</a> for sharing!!).</p>
+<p>Coxcomb charts work so nicely for monthly summaries because the provide continuity between all the periods. They also just look great.</p>
+<p>Here’s a quick tutorial for how to reproduce a river discharge Coxcomb plot from daily flow data. For this you’ll need to install <code>dataRetrieval</code>—a package provided by USGS that allows you to download US station data straight into your R environment.</p>
+<pre class="r"><code>library(dplyr)          # data wrangling
+library(lubridate)      # for working with dates
+library(ggplot2)        # plotting
+library(dataRetrieval)  # flow data access</code></pre>
+<p>Using the <a href="https://maps.waterdata.usgs.gov/mapper/">USGS site mapper</a> I identified three station IDs for each of the main tributaries to the Mississippi (Upper Mississippi, Missouri, and Ohio Rivers). These station IDs are used to access the available daily flow data in cubic feet per second:</p>
+<pre class="r"><code>dataRetrieval::readNWISdv(siteNumbers = c(&quot;06935965&quot;,
+                                          &quot;05587455&quot;,
+                                          &quot;03612600&quot;),
+                          parameterCd = &quot;00060&quot;,
+                          # ^^ 00060 =&gt; discharge
+                          startDate = &quot;1980-10-01&quot;,
+                          endDate = &quot;2019-09-30&quot;) %&gt;% 
+  as_tibble() %&gt;% 
+  rename(flow_cfs = X_00060_00003) %&gt;% 
+  mutate(site = case_when(
+    site_no == &quot;06935965&quot; ~ &quot;Missouri River&quot;,
+    site_no == &quot;05587455&quot; ~ &quot;Upper Mississippi River&quot;,
+    site_no == &quot;03612600&quot; ~ &quot;Ohio River&quot;
+  )) -&gt; flow_data</code></pre>
+<p>Convert to monthly means:</p>
+<pre class="r"><code>flow_data %&gt;% 
+  group_by(site, month = month(Date, label = T)) %&gt;% 
+  summarise(mean_flow_cfs = mean(flow_cfs)) %&gt;% 
+  ungroup() -&gt; monthly_flow_means</code></pre>
+<p>To plot the Coxcomb chart, start with a normal bar chart:</p>
+<pre class="r"><code>monthly_flow_means %&gt;% 
+  ggplot(aes(month, mean_flow_cfs)) +
+  facet_wrap(~site, nrow = 1) +
+  geom_bar(stat = &quot;identity&quot;, width = 1,
+           col = &quot;black&quot;, fill = &quot;dodgerblue&quot;) -&gt; p1
+
+p1</code></pre>
+<p><img src="/post/2020-07-25-polar-histograms-for-monthly-river-discharge_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
+<p>Then just add <code>coord_polar()</code>:</p>
+<pre class="r"><code>p1 + coord_polar() -&gt; p2
+
+p2</code></pre>
+<p><img src="/post/2020-07-25-polar-histograms-for-monthly-river-discharge_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
+<p>And clean up:</p>
+<pre class="r"><code>p2 + theme_bw() +
+  labs(y = NULL, x = NULL,
+       title = &quot;Mississippi River Seasonal Flow Profile&quot;,
+       subtitle = &quot;Mean monthly flow (cfs)&quot;) +
+  theme(panel.grid.major.x = element_blank(),
+        strip.background = element_blank(),
+        strip.text = element_text(size = 14,
+                                  color = &quot;dodgerblue&quot;,
+                                  face = 3),
+        panel.border = element_blank()) -&gt; p3
+
+p3</code></pre>
+<p><img src="/post/2020-07-25-polar-histograms-for-monthly-river-discharge_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
+<p>Or like this…</p>
+<pre class="r"><code>p3 + geom_bar(aes(fill = site),
+              stat = &quot;identity&quot;, width = 1,
+              col = &quot;black&quot;) +
+  facet_wrap(facets = NULL) +
+  theme(strip.text = element_blank()) +
+  labs(fill = NULL)</code></pre>
+<p><img src="/post/2020-07-25-polar-histograms-for-monthly-river-discharge_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
+<p>Enjoy.</p>
