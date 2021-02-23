@@ -6,7 +6,7 @@ title: About
 
 **Sean Turner**. Water resources systems analyst based in the Pacific Northwest. Heavy `tidyverse` user.
 
-**Hung Nguyen**. ... Heavy `data.table` user.
+**Hung Nguyen**. A water guy who loves tree rings. Postdoc at Columbia University. Heavy `data.table` user.
 
 ### What's this blog all about?
 
