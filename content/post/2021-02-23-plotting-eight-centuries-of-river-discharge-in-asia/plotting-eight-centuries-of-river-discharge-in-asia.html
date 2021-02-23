@@ -1,0 +1,438 @@
+---
+title: "Plotting eight centuries of river discharge in Asia"
+author: Hung Nguyen
+date: '2021-02-23'
+slug: plotting-Asia-streamflow-reconstruction
+categories: []
+tags: ["visualizations"]
+description: How to assemble a complex plot with multiple panels and annotations
+iamges: ["asia-flow-full-plot.png", "monsoon-asia-river-map.png"]
+bibliography: references.bib
+---
+
+<script src="/rmarkdown-libs/header-attrs/header-attrs.js"></script>
+
+
+<style>
+p.caption {
+  font-style: italic;
+  color: grey;
+  margin-top: 1%;
+  margin-right: 10%;
+  margin-left: 10%;  
+  text-align: justify;
+}
+</style>
+<div id="introduction" class="section level1">
+<h1>Introduction</h1>
+<p>Figure 1 below is a complex plot, with multiple panels and annotations, that was created fully in R. Initially, I made the main figure in R and annotated it in Adobe Acrobat. But soon I got tired of re-annotating the figure every time I revised it. So I put in some effort to make the whole plot completely reproducible. In this post, I will detail the steps to create this figure. Rather than showing just the good working code, I will try to describe some of my thinking process to show how the plot developed through trial and error.</p>
+<div class="figure">
+<img src="asia-flow-full-plot.png" style="text align: center" alt="" />
+<p class="caption"><strong>Figure 1</strong>. Eight centuries of river discharge history in Asia. Panel a shows the standardized streamflow index (SSI, the z-score of the annual discharge) at 62 rivers in Asia. Negative SSI values correspond to low flow (dry conditions) and positive SSI values denote high flow (wet conditions). The rivers are divided into six regions: CA (Central Asia), EA (East Asia), CN (eastern China), WA (West Asia), SEA (Southeast Asia), and SA (South Asia). Panel b shows the SSI in nine historical events: (1) the Samalas eruption, (2) and (3) the Angkor Droughts I and II, (4) the Kuwae eruption, (5) the Ming Dynasty Drought, (6) the Strange Parallel Drought, (7) the East India Drought, (8) the Tambora eruption, and (9) the Victorian Great Drought. Refer to <span class="citation">(<a href="#ref-nguyen2020" role="doc-biblioref">Nguyen et al. 2020</a>)</span> for more details.</p>
+</div>
+<p>The stations’ locations are provided in Figure 2.</p>
+<div class="figure">
+<img src="monsoon-asia-river-map.png" alt="" />
+<p class="caption"><strong>Figure 2.</strong> Map of the discharge stations and their river basins.</p>
+</div>
+</div>
+<div id="data" class="section level1">
+<h1>Data</h1>
+<p>The data are provided in the GitHub repo of this blog. Let’s read the file and have an overview of the data.</p>
+<pre class="r"><code>library(data.table)
+ssi &lt;- fread(&#39;asia-standardiized-streamflow-index.csv&#39;, key = &#39;ID&#39;)
+ssi</code></pre>
+<pre><code>##                ID year        ssi
+##     1: BD_0000001 1200 -0.2381706
+##     2: BD_0000001 1201 -1.0028535
+##     3: BD_0000001 1202 -0.2155856
+##     4: BD_0000001 1203 -0.1527892
+##     5: BD_0000001 1204 -0.2537824
+##    ---                           
+## 50402: TJ_0000003 2008  0.2308875
+## 50403: TJ_0000003 2009 -0.1633646
+## 50404: TJ_0000003 2010  1.3372388
+## 50405: TJ_0000003 2011  1.1759821
+## 50406: TJ_0000003 2012 -0.7078168</code></pre>
+<p>The data already come in the tidy format, so that’s great.</p>
+<pre class="r"><code>range(ssi$ssi)</code></pre>
+<pre><code>## [1] -2.940408  3.691093</code></pre>
+<p>I’ve also provided the metadata for the stations. Let’s take a look.</p>
+<pre class="r"><code>meta &lt;- fread(&#39;station-meta.csv&#39;, key = &#39;ID&#39;)
+head(meta, 10)</code></pre>
+<pre><code>##             ID region       basin       river        name      long       lat
+##  1: BD_0000001     SA Brahmaputra Brahmaputra Bahadurabad  89.69582 25.179169
+##  2: CN_0000180     CN     Yangtze     Yangtze      Datong 117.62082 30.770836
+##  3: CN_0000181     CN     Yangtze     Huai He      Bengbu 117.36249 32.954169
+##  4: CN_0000189     CN       Pearl  Dong Jiang       Boluo 114.30415 23.162503
+##  5: CN_0000190     CN     Yangtze     Yangtze      Cuntan 106.59582 29.612502
+##  6: CN_0000191     CN     Yangtze     Yangtze      Hankou 114.29582 30.579169
+##  7: CN_0000192     CN     Yangtze     Yangtze     Luoshan 113.34582 29.687502
+##  8: CN_0000194     CN     Yangtze     Yangtze      Wulong 107.76249 29.320836
+##  9: CN_0000195     CN     Yangtze     Yangtze     Yichang 111.27916 30.695836
+## 10: ID_0000024    SEA     Citarum     Citarum     Citarum 107.29420 -6.730795</code></pre>
+</div>
+<div id="plotting-panel-a" class="section level1">
+<h1>Plotting panel a</h1>
+<p>First, let’s plot the basic heat map.</p>
+<pre class="r"><code>library(ggplot2)
+ggplot(ssi) +
+  geom_raster(aes(year, ID, fill = ssi)) +
+  scale_x_continuous(
+    name = NULL,
+    breaks = seq(1200, 2000, 50), 
+    expand = c(0, 0), 
+    position = &#39;top&#39;) +
+  scale_y_discrete(name = &#39;Streamflow station&#39;, expand = c(0, 0)) +
+  scale_fill_gradient2(
+    name = &#39;Standardized streamflow index&#39;, 
+    low = &#39;#6b473e&#39;, mid = &#39;snow1&#39;, high = &#39;#125a0d&#39;, 
+    breaks = -3:3,
+    limits = c(-3.7, 3.7)) +
+  theme(
+    legend.key.width = unit(1, &#39;cm&#39;),
+    legend.key.height = unit(0.3, &#39;cm&#39;),
+    legend.justification = &#39;left&#39;,
+    legend.position = &#39;top&#39;,
+    axis.line.x = element_line())</code></pre>
+<p><img src="/post/2021-02-23-plotting-eight-centuries-of-river-discharge-in-asia/plotting-eight-centuries-of-river-discharge-in-asia_files/figure-html/unnamed-chunk-4-1.png" width="768" /></p>
+<p>The heat map looks good. However, the stations are arranged by alphabetical order, which is not what we want. They should be arranged by region, and from South to North in each region (South to North rather than North to South because when plotting, the y-axis goes up). So the next step is to arrange the stations using their metadata.</p>
+<pre class="r"><code># First, we arrange the regions from South to North
+meta[, region := factor(region, c(&#39;SA&#39;, &#39;SEA&#39;, &#39;WA&#39;, &#39;CN&#39;, &#39;EA&#39;, &#39;CA&#39;))]
+# Now we sort by region and lattitude
+meta &lt;- meta[order(region, lat)]
+# Now we create a column code to encode the plotting order
+meta[, plotOrder := 1:.N]
+# Let&#39;s insepct the updated meta, showing only the columns of interest
+meta[, .(ID, region, lat, plotOrder)]</code></pre>
+<pre><code>##             ID region       lat plotOrder
+##  1: IN_0000176     SA 12.189200         1
+##  2: IN_0000315     SA 12.884400         2
+##  3: IN_0000098     SA 17.251900         3
+##  4: IN_0000117     SA 17.295836         4
+##  5: IN_0000099     SA 17.798900         5
+##  6: IN_0000061     SA 18.587200         6
+##  7: IN_0000067     SA 18.612500         7
+##  8: IN_0000169     SA 18.848300         8
+##  9: IN_0000071     SA 18.852500         9
+## 10: IN_0000073     SA 19.079400        10
+## 11: IN_0000074     SA 19.112503        11
+## 12: IN_0000082     SA 19.815800        12
+## 13: IN_0000234     SA 21.726700        13
+## 14: IN_0000243     SA 21.897800        14
+## 15: IN_0000036     SA 22.168300        15
+## 16: IN_0000253     SA 22.580600        16
+## 17: IN_0000028     SA 23.029700        17
+## 18: BD_0000001     SA 25.179169        18
+## 19: ID_0000024    SEA -6.730795        19
+## 20: KH_0000002    SEA 11.995836        20
+## 21: KH_0000004    SEA 13.529170        21
+## 22: PH_0000006    SEA 14.999245        22
+## 23: LA_0000014    SEA 15.112503        23
+## 24: TH_0000163    SEA 15.220836        24
+## 25: TH_0000178    SEA 15.670836        25
+## 26: TH_0000156    SEA 16.537503        26
+## 27: TH_0000154    SEA 17.396670        27
+## 28: LA_0000005    SEA 17.929170        28
+## 29: TH_0000003    SEA 18.770836        29
+## 30: TH_0000041    SEA 18.787503        30
+## 31: LA_0000001    SEA 19.779169        31
+## 32: LA_0000002    SEA 19.895836        32
+## 33: TH_0000134    SEA 20.270836        33
+## 34: PK_0000001     WA 35.462347        34
+## 35: TJ_0000003     WA 39.004169        35
+## 36: KG_0000005     WA 41.154169        36
+## 37: CN_0000189     CN 23.162503        37
+## 38: CN_0000194     CN 29.320836        38
+## 39: CN_0000190     CN 29.612502        39
+## 40: CN_0000192     CN 29.687502        40
+## 41: CN_0000191     CN 30.579169        41
+## 42: CN_0000195     CN 30.695836        42
+## 43: CN_0000180     CN 30.770836        43
+## 44: CN_0000181     CN 32.954169        44
+## 45: JP_0000996     EA 31.862500        45
+## 46: JP_0001014     EA 31.954700        46
+## 47: JP_0001023     EA 33.164161        47
+## 48: JP_0000759     EA 35.305407        48
+## 49: JP_0000446     EA 35.987491        49
+## 50: KR_0000006     EA 37.945830        50
+## 51: JP_0000367     EA 38.481331        51
+## 52: RU_0000036     EA 48.445835        52
+## 53: KZ_0000002     CA 48.004168        53
+## 54: MN_0000002     CA 49.738124        54
+## 55: RU_0000400     CA 50.312502        55
+## 56: RU_0000401     CA 51.204168        56
+## 57: RU_0000054     CA 51.720835        57
+## 58: RU_0000043     CA 52.020835        58
+## 59: RU_0000398     CA 53.595835        59
+## 60: RU_0000411     CA 53.795835        60
+## 61: RU_0000397     CA 55.845835        61
+## 62: RU_0000408     CA 55.962501        62
+##             ID region       lat plotOrder</code></pre>
+<p>Let’s merge the data now so that we can rearrange the stations in the plot.</p>
+<pre class="r"><code>ssi2 &lt;- merge(ssi, meta[, .(ID, region, plotOrder)], by = &#39;ID&#39;)
+ggplot(ssi2) +
+  geom_raster(aes(year, plotOrder, fill = ssi)) +
+  scale_x_continuous(
+    name = NULL, 
+    breaks = seq(1200, 2000, 50),
+    expand = c(0, 0), 
+    position = &#39;top&#39;) +
+  scale_y_continuous(name = &#39;Streamflow station&#39;, expand = c(0, 0)) +
+  scale_fill_gradient2(
+    name = &#39;Standardized streamflow index&#39;, 
+    low = &#39;#6b473e&#39;, mid = &#39;snow1&#39;, high = &#39;#125a0d&#39;, 
+    breaks = -3:3,
+    limits = c(-3.7, 3.7)) +
+  theme(
+    legend.key.width = unit(1, &#39;cm&#39;),
+    legend.key.height = unit(0.3, &#39;cm&#39;),
+    legend.justification = &#39;left&#39;,
+    legend.position = &#39;top&#39;,
+    axis.line.x = element_line())</code></pre>
+<p><img src="/post/2021-02-23-plotting-eight-centuries-of-river-discharge-in-asia/plotting-eight-centuries-of-river-discharge-in-asia_files/figure-html/unnamed-chunk-6-1.png" width="768" /></p>
+<p>Now the stations are in order. The next step is to plot the region delination lines, hide away the order number, and annotate with the region names instead. To do so, we need to determine the vertical locations of the region lines and texts.</p>
+<pre class="r"><code># Determine the number of stations in each region
+regions &lt;- meta[, .(count = .N), by = region]
+# Starting point for lines. Each cell has size 1x1,
+# therefore we add 0.5 so that the lines are at the top of the cells.
+regions[1, top := count + 0.5]
+for (i in 2:nrow(regions)) regions$top[i] &lt;- regions$top[i-1] + regions$count[i]
+# Midpoints for annotation
+regions[, mid := top - count / 2]</code></pre>
+<p>We can now plot with annotations.</p>
+<pre class="r"><code>ggplot(ssi2) +
+  geom_raster(aes(year, plotOrder, fill = ssi)) +
+  geom_hline(aes(yintercept = top), regions, colour = &#39;grey50&#39;) +
+  annotate(
+    &#39;text&#39;,
+    x = 1150, 
+    y = regions$mid, 
+    label = regions$region,
+    hjust = 0) +
+  scale_x_continuous(
+    name = NULL, 
+    breaks = seq(1200, 2000, 50),
+    expand = c(0, 0), 
+    position = &#39;top&#39;) +
+  scale_y_continuous(name = &#39;Streamflow station&#39;, expand = c(0, 0)) +
+  scale_fill_gradient2(
+    name = &#39;Standardized streamflow index&#39;, 
+    low = &#39;#6b473e&#39;, mid = &#39;snow1&#39;, high = &#39;#125a0d&#39;, 
+    breaks = -3:3,
+    limits = c(-3.7, 3.7)) +
+  theme(
+    panel.background = element_blank(),
+    legend.key.width = unit(1, &#39;cm&#39;),
+    legend.key.height = unit(0.3, &#39;cm&#39;),
+    legend.justification = &#39;left&#39;,
+    legend.position = &#39;top&#39;,
+    axis.line.x = element_line(),
+    axis.text.y = element_blank(),
+    axis.ticks.y = element_blank()) </code></pre>
+<p><img src="/post/2021-02-23-plotting-eight-centuries-of-river-discharge-in-asia/plotting-eight-centuries-of-river-discharge-in-asia_files/figure-html/unnamed-chunk-8-1.png" width="768" /></p>
+<p>Now the region lines and the texts are where they need to be, but the lines extend too far to the left. We extended the x-axis back to the year 1150 so that we could plot the region texts, and we used <code>geom_hline()</code>, which draws lines throughout the plot. We could fix this by changing from <code>geom_hline()</code> to <code>geom_linerange()</code> and providing additional <code>xmax</code> and <code>xmin</code> arguments. I tried this and realized that this didn’t work because the x-axis still extended back and that looked ugly. Then I came up with a new trick: I’ll make use of the axis breaks for the region texts. This way, I don’t have to extend the x-axis back, and I don’t have to add a new layer.</p>
+<pre class="r"><code>ggplot(ssi2) +
+  geom_raster(aes(year, plotOrder, fill = ssi)) +
+  geom_hline(aes(yintercept = top), regions, colour = &#39;grey50&#39;) +
+  scale_x_continuous(
+    name = NULL, 
+    breaks = seq(1200, 2000, 50),
+    expand = c(0, 0), 
+    position = &#39;top&#39;) +
+  scale_y_continuous(
+    name = &#39;Streamflow station&#39;, 
+    breaks = regions$mid,
+    labels = regions$region,
+    expand = c(0, 0)) +
+  scale_fill_gradient2(
+    name = &#39;Standardized streamflow index&#39;, 
+    low = &#39;#6b473e&#39;, mid = &#39;snow1&#39;, high = &#39;#125a0d&#39;, 
+    breaks = -3:3,
+    limits = c(-3.7, 3.7)) +
+  theme(
+    panel.background = element_blank(),
+    legend.key.width = unit(1, &#39;cm&#39;),
+    legend.key.height = unit(0.3, &#39;cm&#39;),
+    legend.justification = &#39;left&#39;,
+    legend.position = &#39;top&#39;,
+    axis.line.x = element_line(),
+    # the line axis.text.y = element_blank() is removed
+    axis.ticks.y = element_blank()) </code></pre>
+<p><img src="/post/2021-02-23-plotting-eight-centuries-of-river-discharge-in-asia/plotting-eight-centuries-of-river-discharge-in-asia_files/figure-html/unnamed-chunk-9-1.png" width="768" /></p>
+<p>Hooray!</p>
+</div>
+<div id="plotting-panel-b" class="section level1">
+<h1>Plotting panel b</h1>
+<p>Panel b consists of subsets of panel a for different periods. Thus we can transform the code of panel a into a function that takes the starting and ending years and just plots the heatmap for that period. Additionally, we need to take care of the axes: panel a’s x-axis is on top while those of panel b is at the bottom, and the x-axis has custom breaks. Only the first subpanel of b has the region texts. Only panel a has the legend. These options can be handled easily by function aruguments.</p>
+<div id="plotting-routine" class="section level2">
+<h2>Plotting routine</h2>
+<pre class="r"><code>flow_history &lt;- function(ssi.data, 
+                         region.data, 
+                         start.year, 
+                         end.year,
+                         legend.position = c(&#39;top&#39;, &#39;none&#39;),
+                         x.breaks,
+                         x.axis.position = c(&#39;bottom&#39;, &#39;top&#39;),
+                         region.text = FALSE) {
+  ggplot(ssi.data[year %between% c(start.year, end.year)]) +
+    geom_raster(aes(year, plotOrder, fill = ssi)) +
+    geom_hline(aes(yintercept = top), region.data, colour = &#39;grey50&#39;) +
+    scale_x_continuous(
+      name = NULL,
+      breaks = x.breaks,
+      expand = c(0, 0), 
+      position = x.axis.position) +
+    scale_y_continuous(
+      name = &#39;Streamflow station&#39;, 
+      breaks = region.data$mid,
+      labels = region.data$region,
+      expand = c(0, 0)) +
+    scale_fill_gradient2(
+      name = &#39;Standardized streamflow index&#39;, 
+      low = &#39;#6b473e&#39;, mid = &#39;snow1&#39;, high = &#39;#125a0d&#39;, 
+      na.value = &#39;white&#39;,
+      breaks = -3:3,
+      limits = c(-3.7, 3.7)) +
+    theme(
+      panel.background = element_blank(),
+      legend.key.width = unit(1, &#39;cm&#39;),
+      legend.key.height = unit(0.3, &#39;cm&#39;),
+      legend.justification = &#39;left&#39;,
+      legend.position = legend.position,
+      axis.line.x = element_line(),
+      axis.text.y = if (!region.text) element_blank(),
+      axis.title.y = if (!region.text) element_blank() else element_text(angle = 90),
+      axis.ticks.y = element_blank())
+}</code></pre>
+<p>Now let’s test this function.</p>
+<pre class="r"><code># Panel a: full plot
+pa &lt;- flow_history(
+  ssi.data = ssi2, region.data = regions, 
+  start.year = 1200, end.year = 2012,
+  legend.position = &#39;top&#39;,
+  x.breaks = seq(1200, 2000, 50), 
+  x.axis.position = &#39;top&#39;, 
+  region.text = TRUE)
+pa</code></pre>
+<p><img src="/post/2021-02-23-plotting-eight-centuries-of-river-discharge-in-asia/plotting-eight-centuries-of-river-discharge-in-asia_files/figure-html/unnamed-chunk-11-1.png" width="768" /></p>
+<pre class="r"><code># Panel b1: Samalas eruption
+pb1 &lt;- flow_history(
+  ssi.data = ssi2, region.data = regions, 
+  start.year = 1257, end.year = 1259,
+  legend.position = &#39;none&#39;,
+  x.breaks = 1258, 
+  x.axis.position = &#39;bottom&#39;, 
+  region.text = TRUE)
+pb1</code></pre>
+<p><img src="/post/2021-02-23-plotting-eight-centuries-of-river-discharge-in-asia/plotting-eight-centuries-of-river-discharge-in-asia_files/figure-html/unnamed-chunk-12-1.png" width="96" /></p>
+<pre class="r"><code># Panel b2: Angkor Drought I
+pb2 &lt;- flow_history(
+  ssi.data = ssi2, region.data = regions, 
+  start.year = 1345, end.year = 1375,
+  legend.position = &#39;none&#39;,
+  x.breaks = seq(1345, 1375, 5), 
+  x.axis.position = &#39;bottom&#39;, 
+  region.text = FALSE)
+pb2</code></pre>
+<p><img src="/post/2021-02-23-plotting-eight-centuries-of-river-discharge-in-asia/plotting-eight-centuries-of-river-discharge-in-asia_files/figure-html/unnamed-chunk-13-1.png" width="384" /></p>
+<p>Now that the individual panels can be plotted, let’s assemble them.</p>
+</div>
+<div id="assembling-plots" class="section level2">
+<h2>Assembling plots</h2>
+<p>There are many packages to assemble plots, perhaps the most common of which are <code>cowplot</code> by Claus O. Wilke and <code>patchwork</code> by Thomas Lin Pedersen. The two packages work a bit differently. I think the aspect most relevant to our task here is the way the packages scale the width and height of the plots. <code>cowplot</code> includes the axes when calculating widths and heights while <code>patchwork</code> doesn’t. To visualize this difference, let’s put panels b1 and b2 together using these two packages. There are 3 years in panel b1 and 21 years in panel b2, so we’ll scale them with the ratio 3/31.</p>
+<pre class="r"><code># Assemble with cowplot
+library(cowplot)
+plot_grid(pb1, pb2, rel_widths = c(3, 31))</code></pre>
+<p><img src="/post/2021-02-23-plotting-eight-centuries-of-river-discharge-in-asia/plotting-eight-centuries-of-river-discharge-in-asia_files/figure-html/unnamed-chunk-14-1.png" width="672" /></p>
+<pre class="r"><code># Assemble with patchwork
+library(patchwork)
+pb1 + pb2 +
+  plot_layout(widths = c(3, 31))</code></pre>
+<p><img src="/post/2021-02-23-plotting-eight-centuries-of-river-discharge-in-asia/plotting-eight-centuries-of-river-discharge-in-asia_files/figure-html/unnamed-chunk-15-1.png" width="672" /></p>
+<p>Notice what happens to b1. Because <code>cowplot</code> counts the y-axis when calculating plot width, and b1 has a wide y-axis and b2 does not, b1 gets squished. <code>patchwork</code> only considers the plot body for widths, so this problem does not happen.</p>
+<p>Let’s now make the rest of panel b and then assemble.</p>
+<pre class="r"><code># Panels b3 to b9
+pb3 &lt;- flow_history(ssi2, regions, 1401, 1425, x.breaks = seq(1405, 1420, 5),
+                    legend.position = &#39;none&#39;, x.axis.position = &#39;bottom&#39;)
+pb4 &lt;- flow_history(ssi2, regions, 1452, 1454, x.breaks = 1452,
+                    legend.position = &#39;none&#39;, x.axis.position = &#39;bottom&#39;)
+pb5 &lt;- flow_history(ssi2, regions, 1638, 1641, x.breaks = 1640,
+                    legend.position = &#39;none&#39;, x.axis.position = &#39;bottom&#39;)
+pb6 &lt;- flow_history(ssi2, regions, 1756, 1768, x.breaks = c(1760, 1765),
+                    legend.position = &#39;none&#39;, x.axis.position = &#39;bottom&#39;)
+pb7 &lt;- flow_history(ssi2, regions, 1790, 1796, x.breaks = c(1790, 1795),
+                    legend.position = &#39;none&#39;, x.axis.position = &#39;bottom&#39;)
+pb8 &lt;- flow_history(ssi2, regions, 1815, 1817, x.breaks = 1815,
+                    legend.position = &#39;none&#39;, x.axis.position = &#39;bottom&#39;)
+pb9 &lt;- flow_history(ssi2, regions, 1876, 1878, x.breaks = 1877,
+                    legend.position = &#39;none&#39;, x.axis.position = &#39;bottom&#39;)
+# Panel b together
+pb &lt;- pb1 + pb2 + pb3 + pb4 + pb5 + pb6 + pb7 + pb8 + pb9 +
+  plot_layout(widths = c(3, 31, 25, 3, 4, 13, 7, 3, 3), nrow = 1)
+# Merging panels a and b
+pab &lt;- pa + plot_spacer() + pb + 
+  plot_layout(ncol = 1, heights = c(1, 0.2, 0.8)) 
+pab</code></pre>
+<p><img src="/post/2021-02-23-plotting-eight-centuries-of-river-discharge-in-asia/plotting-eight-centuries-of-river-discharge-in-asia_files/figure-html/unnamed-chunk-16-1.png" width="816" /></p>
+<p>We have the plot! Now all we need to do is add the annotations.</p>
+</div>
+</div>
+<div id="annotating" class="section level1">
+<h1>Annotating</h1>
+<p>The horizontal lines at the bottom of panel a is easy to do.</p>
+<pre class="r"><code># Starting and ending years of events
+segments &lt;- data.table(x    = c(1257, 1345, 1401, 1452, 1638, 1756, 1790, 1815, 1876),
+                       xend = c(1258, 1375, 1425, 1453, 1641, 1768, 1796, 1816, 1878))
+# Add the segments to panel a
+pa &lt;- pa +
+  geom_segment(aes(x = x, xend = xend, y = 0.125, yend = 0.125), size = 0.25,
+                   data = segments, colour = &#39;steelblue&#39;)
+# Update the assembly
+pab &lt;- pa + plot_spacer() + pb + 
+  plot_layout(ncol = 1, heights = c(1, 0.2, 0.8)) 
+pab</code></pre>
+<p><img src="/post/2021-02-23-plotting-eight-centuries-of-river-discharge-in-asia/plotting-eight-centuries-of-river-discharge-in-asia_files/figure-html/unnamed-chunk-17-1.png" width="816" /></p>
+<p>Drawing the lines connecting the panels was actually more challenging than I thought. The annotations link different panels, and it’s rather difficult to determine their relative positions, because each panel has its own coordinate system. Instead, I transformed them into one grid object with one coordinate system, and drew the annotations on this canvas. This was possible thanks to <code>cowplot</code>.</p>
+<pre class="r"><code># Transform the patchwork into a grid object
+fhGrob &lt;- patchwork::patchworkGrob(pab)
+# Draw tthe grid object as a cowplot object
+fhWrap &lt;- cowplot::ggdraw(fhGrob)</code></pre>
+<p>Now I just need to determine the positions of the lines nad texts. This was relatively easy because I knew the starting and ending years of each event, so I could determine the proportions of the lines. Still, it took some adjusting. Finally, these numbers below work for a 8.5 in x 6 in canvas.</p>
+<pre class="r"><code>yLine &lt;- c(0.3500, 0.4730)
+yText &lt;- 0.365
+
+fhAnnotated &lt;- fhWrap +
+  draw_line(c(0.0730, 0.1370), yLine, colour = &#39;steelblue&#39;, size = 0.2) + #1
+  draw_line(c(0.0970, 0.1380), yLine, colour = &#39;steelblue&#39;, size = 0.2) + #1
+  draw_line(c(0.1180, 0.2360), yLine, colour = &#39;steelblue&#39;, size = 0.2) + #2
+  draw_line(c(0.3685, 0.2690), yLine, colour = &#39;steelblue&#39;, size = 0.2) + #2
+  draw_line(c(0.3890, 0.2975), yLine, colour = &#39;steelblue&#39;, size = 0.2) + #3
+  draw_line(c(0.5925, 0.3245), yLine, colour = &#39;steelblue&#39;, size = 0.2) + #3
+  draw_line(c(0.6120, 0.3545), yLine, colour = &#39;steelblue&#39;, size = 0.2) + #4
+  draw_line(c(0.6361, 0.3560), yLine, colour = &#39;steelblue&#39;, size = 0.2) + #4
+  draw_line(c(0.6575, 0.5625), yLine, colour = &#39;steelblue&#39;, size = 0.2) + #5
+  draw_line(c(0.6892, 0.5664), yLine, colour = &#39;steelblue&#39;, size = 0.2) + #5
+  draw_line(c(0.7100, 0.6950), yLine, colour = &#39;steelblue&#39;, size = 0.2) + #6
+  draw_line(c(0.8150, 0.7085), yLine, colour = &#39;steelblue&#39;, size = 0.2) + #6
+  draw_line(c(0.8355, 0.7325), yLine, colour = &#39;steelblue&#39;, size = 0.2) + #7
+  draw_line(c(0.8925, 0.7392), yLine, colour = &#39;steelblue&#39;, size = 0.2) + #7
+  draw_line(c(0.9128, 0.7610), yLine, colour = &#39;steelblue&#39;, size = 0.2) + #8
+  draw_line(c(0.9371, 0.7625), yLine, colour = &#39;steelblue&#39;, size = 0.2) + #8
+  draw_line(c(0.9575, 0.8290), yLine, colour = &#39;steelblue&#39;, size = 0.2) + #9
+  draw_line(c(0.9820, 0.8308), yLine, colour = &#39;steelblue&#39;, size = 0.2) + #9
+  draw_text(paste0(&#39;(&#39;, 1:9, &#39;)&#39;),
+            c(0.090, 0.244, 0.490, 0.623, 0.674, 0.767, 0.863, 0.921, 0.965),
+            yText, size = 9) +
+  draw_text(c(&#39;a)&#39;, &#39;b)&#39;), 0.03, c(0.95, 0.4), size = 11, fontface = &#39;bold&#39;)
+fhAnnotated</code></pre>
+<p><img src="/post/2021-02-23-plotting-eight-centuries-of-river-discharge-in-asia/plotting-eight-centuries-of-river-discharge-in-asia_files/figure-html/unnamed-chunk-19-1.png" width="150%" /></p>
+</div>
+<div id="references" class="section level1 unnumbered">
+<h1>References</h1>
+<div id="refs" class="references csl-bib-body hanging-indent">
+<div id="ref-nguyen2020" class="csl-entry">
+Nguyen, Hung T. T., Sean W. D. Turner, Brendan M. Buckley, and Stefano Galelli. 2020. <span>“Coherent Streamflow Variability in Monsoon Asia over the Past Eight Centuries—Links to Oceanic Drivers.”</span> <em>Water Resources Research</em> 56 (12). <a href="https://doi.org/10.1029/2020WR027883">https://doi.org/10.1029/2020WR027883</a>.
+</div>
+</div>
+</div>
