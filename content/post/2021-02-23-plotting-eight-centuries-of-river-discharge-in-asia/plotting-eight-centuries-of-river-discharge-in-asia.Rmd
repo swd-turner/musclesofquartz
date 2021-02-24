@@ -23,17 +23,26 @@ p.caption {
   margin-left: 10%;  
   text-align: justify;
 }
+
+pre code {
+  word-wrap: normal;
+  white-space: pre;
+}
+
+.container {
+  max-width: 8in;
+}
 </style>
 
 # Introduction
 
 Figure 1 below is a complex plot, with multiple panels and annotations, that was created fully in R. Initially, I made the main figure in R and annotated it in Adobe Acrobat. But soon I got tired of re-annotating the figure every time I revised it. So I put in some effort to make the whole plot completely reproducible. In this post, I will detail the steps to create this figure. Rather than showing just the good working code, I will try to describe some of my thinking process to show how the plot developed through trial and error.
 
-![**Figure 1**. Eight centuries of river discharge history in Asia. Panel a shows the standardized streamflow index (SSI, the z-score of the annual discharge) at 62 rivers in Asia. Negative SSI values correspond to low flow (dry conditions) and positive SSI values denote high flow (wet conditions). The rivers are divided into six regions: CA (Central Asia), EA (East Asia), CN (eastern China), WA (West Asia), SEA (Southeast Asia), and SA (South Asia). Panel b shows the SSI in nine historical events: (1) the Samalas eruption, (2) and (3) the Angkor Droughts I and II, (4) the Kuwae eruption, (5) the Ming Dynasty Drought, (6) the Strange Parallel Drought, (7) the East India Drought, (8) the Tambora eruption, and (9) the Victorian Great Drought. Refer to [@nguyen2020] for more details.](asia-flow-full-plot.png){style="text align: center"}
+![**Figure 1**. Eight centuries of river discharge history in Asia. Panel a shows the standardized streamflow index (SSI, the z-score of the annual discharge) at 62 rivers in Asia. Negative SSI values correspond to low flow (dry conditions) and positive SSI values denote high flow (wet conditions). The rivers are divided into six regions: CA (Central Asia), EA (East Asia), CN (eastern China), WA (West Asia), SEA (Southeast Asia), and SA (South Asia). Panel b shows the SSI in nine historical events: (1) the Samalas eruption, (2) and (3) the Angkor Droughts I and II, (4) the Kuwae eruption, (5) the Ming Dynasty Drought, (6) the Strange Parallel Drought, (7) the East India Drought, (8) the Tambora eruption, and (9) the Victorian Great Drought. Refer to [@nguyen2020] for more details.](/images/asia_flow_full_plot.png)
 
 The stations' locations are provided in Figure 2.
 
-![**Figure 2.** Map of the discharge stations and their river basins.](monsoon-asia-river-map.png)
+![**Figure 2.** Map of the discharge stations and their river basins.](/images/monsoon_asia_river_map.png)
 
 # Data
 
@@ -95,13 +104,15 @@ meta <- meta[order(region, lat)]
 # Now we create a column code to encode the plotting order
 meta[, plotOrder := 1:.N]
 # Let's insepct the updated meta, showing only the columns of interest
-meta[, .(ID, region, lat, plotOrder)]
+print(meta[, .(ID, region, lat, plotOrder)], nrows = 50)
 ```
 
 Let's merge the data now so that we can rearrange the stations in the plot.
 
-```{r, fig.width=8, fig.height=7}
+```{r, fig.width=8, fig.height=4}
+# Merge by ID
 ssi2 <- merge(ssi, meta[, .(ID, region, plotOrder)], by = 'ID')
+# Plot
 ggplot(ssi2) +
   geom_raster(aes(year, plotOrder, fill = ssi)) +
   scale_x_continuous(
@@ -109,7 +120,10 @@ ggplot(ssi2) +
     breaks = seq(1200, 2000, 50),
     expand = c(0, 0), 
     position = 'top') +
-  scale_y_continuous(name = 'Streamflow station', expand = c(0, 0)) +
+  # y-axis is now continous (plot order) instead of discrete (ID)
+  scale_y_continuous(
+    name = 'Streamflow station', 
+    expand = c(0, 0)) +
   scale_fill_gradient2(
     name = 'Standardized streamflow index', 
     low = '#6b473e', mid = 'snow1', high = '#125a0d', 
@@ -141,10 +155,11 @@ We can now plot with annotations.
 ```{r, fig.width=8, fig.height=4}
 ggplot(ssi2) +
   geom_raster(aes(year, plotOrder, fill = ssi)) +
+  # Plot the region delination lines
   geom_hline(aes(yintercept = top), regions, colour = 'grey50') +
   annotate(
-    'text',
-    x = 1150, 
+    geom = 'text',
+    x = 1150,  # Extend the x-axis back to the left
     y = regions$mid, 
     label = regions$region,
     hjust = 0) +
@@ -153,19 +168,25 @@ ggplot(ssi2) +
     breaks = seq(1200, 2000, 50),
     expand = c(0, 0), 
     position = 'top') +
-  scale_y_continuous(name = 'Streamflow station', expand = c(0, 0)) +
+  scale_y_continuous(
+    name = 'Streamflow station', 
+    expand = c(0, 0)) +
   scale_fill_gradient2(
     name = 'Standardized streamflow index', 
     low = '#6b473e', mid = 'snow1', high = '#125a0d', 
     breaks = -3:3,
     limits = c(-3.7, 3.7)) +
   theme(
+    # Because we extended the axis back, 
+    # there is now a grey background (ggplot2 default)
+    # We need to remove it
     panel.background = element_blank(),
     legend.key.width = unit(1, 'cm'),
     legend.key.height = unit(0.3, 'cm'),
     legend.justification = 'left',
     legend.position = 'top',
     axis.line.x = element_line(),
+    # Remove the y-axis text and ticks
     axis.text.y = element_blank(),
     axis.ticks.y = element_blank()) 
 ```
@@ -175,6 +196,7 @@ Now the region lines and the texts are where they need to be, but the lines exte
 ```{r, fig.width=8, fig.height=4}
 ggplot(ssi2) +
   geom_raster(aes(year, plotOrder, fill = ssi)) +
+  # Keep geom_hline()
   geom_hline(aes(yintercept = top), regions, colour = 'grey50') +
   scale_x_continuous(
     name = NULL, 
@@ -183,6 +205,7 @@ ggplot(ssi2) +
     position = 'top') +
   scale_y_continuous(
     name = 'Streamflow station', 
+    # Add breaks and break labels
     breaks = regions$mid,
     labels = regions$region,
     expand = c(0, 0)) +
@@ -219,14 +242,17 @@ flow_history <- function(ssi.data,
                          x.breaks,
                          x.axis.position = c('bottom', 'top'),
                          region.text = FALSE) {
+  # Filter the data by year
   ggplot(ssi.data[year %between% c(start.year, end.year)]) +
     geom_raster(aes(year, plotOrder, fill = ssi)) +
     geom_hline(aes(yintercept = top), region.data, colour = 'grey50') +
     scale_x_continuous(
       name = NULL,
-      breaks = x.breaks,
+      # custom x breaks
+      breaks = x.breaks, 
       expand = c(0, 0), 
-      position = x.axis.position) +
+      # custom axis position (bottom or top)
+      position = x.axis.position) + 
     scale_y_continuous(
       name = 'Streamflow station', 
       breaks = region.data$mid,
@@ -245,7 +271,9 @@ flow_history <- function(ssi.data,
       legend.justification = 'left',
       legend.position = legend.position,
       axis.line.x = element_line(),
+      # Whether to show region texts
       axis.text.y = if (!region.text) element_blank(),
+      # Whether to show y-axis title (hidden if region texts are not shown)
       axis.title.y = if (!region.text) element_blank() else element_text(angle = 90),
       axis.ticks.y = element_blank())
 }
@@ -257,7 +285,8 @@ Now let's test this function.
 # Panel a: full plot
 pa <- flow_history(
   ssi.data = ssi2, region.data = regions, 
-  start.year = 1200, end.year = 2012,
+  # Full time horizon
+  start.year = 1200, end.year = 2012, 
   legend.position = 'top',
   x.breaks = seq(1200, 2000, 50), 
   x.axis.position = 'top', 
@@ -269,6 +298,7 @@ pa
 # Panel b1: Samalas eruption
 pb1 <- flow_history(
   ssi.data = ssi2, region.data = regions, 
+  # 3 years surrounding the event
   start.year = 1257, end.year = 1259,
   legend.position = 'none',
   x.breaks = 1258, 
@@ -300,6 +330,7 @@ There are many packages to assemble plots, perhaps the most common of which are 
 library(cowplot)
 plot_grid(pb1, pb2, rel_widths = c(3, 31))
 ```
+
 ```{r, message=FALSE}
 # Assemble with patchwork
 library(patchwork)
@@ -329,6 +360,7 @@ pb9 <- flow_history(ssi2, regions, 1876, 1878, x.breaks = 1877,
                     legend.position = 'none', x.axis.position = 'bottom')
 # Panel b together
 pb <- pb1 + pb2 + pb3 + pb4 + pb5 + pb6 + pb7 + pb8 + pb9 +
+  # Set relative widths based on the number of years in each period
   plot_layout(widths = c(3, 31, 25, 3, 4, 13, 7, 3, 3), nrow = 1)
 # Merging panels a and b
 pab <- pa + plot_spacer() + pb + 
@@ -340,15 +372,16 @@ We have the plot! Now all we need to do is add the annotations.
 
 # Annotating
 
-The horizontal lines at the bottom of panel a is easy to do.
+The horizontal lines at the bottom of panel a is easy to do with `geom_segment()`.
 
 ```{r, fig.width=8.5, fig.height=6}
 # Starting and ending years of events
-segments <- data.table(x    = c(1257, 1345, 1401, 1452, 1638, 1756, 1790, 1815, 1876),
-                       xend = c(1258, 1375, 1425, 1453, 1641, 1768, 1796, 1816, 1878))
+segments <- data.table(
+  x    = c(1257, 1345, 1401, 1452, 1638, 1756, 1790, 1815, 1876),
+  xend = c(1258, 1375, 1425, 1453, 1641, 1768, 1796, 1816, 1878))
 # Add the segments to panel a
 pa <- pa +
-  geom_segment(aes(x = x, xend = xend, y = 0.125, yend = 0.125), size = 0.25,
+  geom_segment(aes(x = x, xend = xend, y = 0.125, yend = 0.125), size = 0.4,
                    data = segments, colour = 'steelblue')
 # Update the assembly
 pab <- pa + plot_spacer() + pb + 
@@ -356,7 +389,7 @@ pab <- pa + plot_spacer() + pb +
 pab
 ```
 
-Drawing the lines connecting the panels was actually more challenging than I thought. The annotations link different panels, and it's rather difficult to determine their relative positions, because each panel has its own coordinate system. Instead, I transformed them into one grid object with one coordinate system, and drew the annotations on this canvas. This was possible thanks to `cowplot`.
+Drawing the lines connecting the panels is more challenging. The annotations link different panels, and it's rather difficult to determine their relative positions, because each panel has its own coordinate system. Instead, I transformed them into one grid object with one coordinate system, and drew the annotations on this canvas. This was possible thanks to `cowplot`.
 
 ```{r}
 # Transform the patchwork into a grid object
@@ -365,36 +398,52 @@ fhGrob <- patchwork::patchworkGrob(pab)
 fhWrap <- cowplot::ggdraw(fhGrob)
 ```
 
-Now I just need to determine the positions of the lines nad texts. This was relatively easy because I knew the starting and ending years of each event, so I could determine the proportions of the lines. Still, it took some adjusting. Finally, these numbers below work for a 8.5 in x 6 in canvas.
+Now I just need to determine the positions of the lines nad texts. This was relatively easy because I knew the starting and ending years of each event, so I could determine the proportions of the lines. Still, it took some trying and adjusting. Finally, these numbers below work for a 8.5 in x 6 in canvas.
 
 ```{r, fig.width=8.5, fig.height=6, out.width="150%"}
 yLine <- c(0.3500, 0.4730)
 yText <- 0.365
 
 fhAnnotated <- fhWrap +
-  draw_line(c(0.0730, 0.1370), yLine, colour = 'steelblue', size = 0.2) + #1
-  draw_line(c(0.0970, 0.1380), yLine, colour = 'steelblue', size = 0.2) + #1
-  draw_line(c(0.1180, 0.2360), yLine, colour = 'steelblue', size = 0.2) + #2
-  draw_line(c(0.3685, 0.2690), yLine, colour = 'steelblue', size = 0.2) + #2
-  draw_line(c(0.3890, 0.2975), yLine, colour = 'steelblue', size = 0.2) + #3
-  draw_line(c(0.5925, 0.3245), yLine, colour = 'steelblue', size = 0.2) + #3
-  draw_line(c(0.6120, 0.3545), yLine, colour = 'steelblue', size = 0.2) + #4
-  draw_line(c(0.6361, 0.3560), yLine, colour = 'steelblue', size = 0.2) + #4
-  draw_line(c(0.6575, 0.5625), yLine, colour = 'steelblue', size = 0.2) + #5
-  draw_line(c(0.6892, 0.5664), yLine, colour = 'steelblue', size = 0.2) + #5
-  draw_line(c(0.7100, 0.6950), yLine, colour = 'steelblue', size = 0.2) + #6
-  draw_line(c(0.8150, 0.7085), yLine, colour = 'steelblue', size = 0.2) + #6
-  draw_line(c(0.8355, 0.7325), yLine, colour = 'steelblue', size = 0.2) + #7
-  draw_line(c(0.8925, 0.7392), yLine, colour = 'steelblue', size = 0.2) + #7
-  draw_line(c(0.9128, 0.7610), yLine, colour = 'steelblue', size = 0.2) + #8
-  draw_line(c(0.9371, 0.7625), yLine, colour = 'steelblue', size = 0.2) + #8
-  draw_line(c(0.9575, 0.8290), yLine, colour = 'steelblue', size = 0.2) + #9
-  draw_line(c(0.9820, 0.8308), yLine, colour = 'steelblue', size = 0.2) + #9
+  # Each event has two marking lines for the start and the end
+  draw_line(c(0.0730, 0.1370), yLine, colour = 'steelblue', size = 0.4) + #1
+  draw_line(c(0.0970, 0.1380), yLine, colour = 'steelblue', size = 0.4) + #1
+  draw_line(c(0.1180, 0.2360), yLine, colour = 'steelblue', size = 0.4) + #2
+  draw_line(c(0.3685, 0.2690), yLine, colour = 'steelblue', size = 0.4) + #2
+  draw_line(c(0.3890, 0.2975), yLine, colour = 'steelblue', size = 0.4) + #3
+  draw_line(c(0.5925, 0.3245), yLine, colour = 'steelblue', size = 0.4) + #3
+  draw_line(c(0.6120, 0.3545), yLine, colour = 'steelblue', size = 0.4) + #4
+  draw_line(c(0.6361, 0.3560), yLine, colour = 'steelblue', size = 0.4) + #4
+  draw_line(c(0.6575, 0.5625), yLine, colour = 'steelblue', size = 0.4) + #5
+  draw_line(c(0.6892, 0.5664), yLine, colour = 'steelblue', size = 0.4) + #5
+  draw_line(c(0.7100, 0.6950), yLine, colour = 'steelblue', size = 0.4) + #6
+  draw_line(c(0.8150, 0.7085), yLine, colour = 'steelblue', size = 0.4) + #6
+  draw_line(c(0.8355, 0.7325), yLine, colour = 'steelblue', size = 0.4) + #7
+  draw_line(c(0.8925, 0.7392), yLine, colour = 'steelblue', size = 0.4) + #7
+  draw_line(c(0.9128, 0.7610), yLine, colour = 'steelblue', size = 0.4) + #8
+  draw_line(c(0.9371, 0.7625), yLine, colour = 'steelblue', size = 0.4) + #8
+  draw_line(c(0.9575, 0.8290), yLine, colour = 'steelblue', size = 0.4) + #9
+  draw_line(c(0.9820, 0.8308), yLine, colour = 'steelblue', size = 0.4) + #9
+  # Event numbers
   draw_text(paste0('(', 1:9, ')'),
             c(0.090, 0.244, 0.490, 0.623, 0.674, 0.767, 0.863, 0.921, 0.965),
             yText, size = 9) +
+  # Panel tag
   draw_text(c('a)', 'b)'), 0.03, c(0.95, 0.4), size = 11, fontface = 'bold')
 fhAnnotated
 ```
 
+# Summary
+
+In creating this complex plot, we've gone through several stages. Let's recap.
+
+* First, we wrote a routine to create the overall plot (panel a)
+* Then, we converted that routine into a function with arguments for time period and layout, so that we can create multiple plots for sub-periods (panel b)
+* We assembled the panels with `patchwork`. This yielded a `patchwork` object.
+* We converted the `patchwork` object into a generic `grob` that could be read into `cowplot`.
+* The `grob` acted as a canvas onwhich we drew the annotations.
+
+This post has demonstrated how a complex plot can be built up from the pieces. I hope it'll be useful for your next visualization.
+
 # References
+
