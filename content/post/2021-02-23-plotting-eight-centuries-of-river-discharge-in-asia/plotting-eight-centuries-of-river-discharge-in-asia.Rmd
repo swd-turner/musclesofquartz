@@ -4,7 +4,7 @@ author: Hung Nguyen
 date: '2021-02-23'
 slug: plotting-Asia-streamflow-reconstruction
 categories: []
-tags: ["visualizations"]
+tags: []
 description: How to assemble a complex plot with multiple panels and annotations
 iamges: ["asia-flow-full-plot.png", "monsoon-asia-river-map.png"]
 bibliography: references.bib
