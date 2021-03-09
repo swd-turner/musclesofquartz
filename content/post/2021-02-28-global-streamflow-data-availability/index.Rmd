@@ -1,0 +1,166 @@
+---
+title: Global streamflow data availability
+author: Hung Nguyen
+date: '2021-03-09'
+slug: []
+categories: []
+tags: []
+description: Histograms of streamflow count by continent
+bibliography: references.bib
+---
+
+<style>
+pre {
+  overflow-x: auto;
+}
+
+pre code {
+  word-wrap: normal;
+  white-space: pre;
+}
+
+.container {
+  max-width: 8in;
+}
+</style>
+
+
+## Data
+
+How much streamflow data is publicly available globally? @do2018 compiled a massive global streamflow data set from multiple sources, and spent a lot of time on quality control. This data set is called GSIM---Global Streamflow Indices and Metadata. Thanks to their effort we have the answer for our question. We will explore GSIM to find out how many streamflow stations are available in each continent, and how many years of data are available at those stations.
+
+GSIM can be downloaded [here](https://doi.pangaea.de/10.1594/PANGAEA.887477). This is a massive data set. For this exercise we only need the file `GSIM_metadata.csv`, which I've included in the GitHub repo of this post. We will handle this file with `data.table` and plot it with `ggplot2`. 
+
+```{r}
+library(data.table)
+library(ggplot2)
+```
+
+
+We will also need the package `countrycode`, install it if you don't have it already.
+
+```{r, eval=FALSE}
+install.packages('countrycode')
+```
+
+Now let's read and inspect the metadata record.
+
+```{r, R.options = list(width=999)}
+gm <- fread('GSIM_metadata.csv') # gm stands for GSIM metadata
+head(gm)
+```
+
+In this record, each row contains the attributes of a station. The very last column, `year.no`, is what we need: it's the number of years in each station.
+
+The record tells us which country the station is in. There is a small problem: Namibia's country code is `"NA"`, and `data.table` mistook it as `NA` value.
+
+```{r, R.options=list(width=999)}
+head(gm[is.na(country), .(gsim.no, country)])
+```
+
+Fixing this is easy:
+
+```{r}
+gm[is.na(country), country := 'NA']
+```
+
+## Histogram by continent
+
+We can use `country` to determine which continent each station is in with help from the package `countrycode`.
+
+```{r}
+# Assign continent to country
+gm[, continent := countrycode::countrycode(
+  warn = FALSE,
+  country,
+  origin = 'iso2c',
+  destination = 'continent'
+)]
+# Serbia and Montenegro have become two countries since 2006.
+# They were listed as one country in some source data of GSIM.
+# This doesn't affect us as they are both in Europe.
+gm[country == 'CS', continent := 'Europe']
+# Split "Americas" into North America and South America
+gm[country %in% c('US', 'CA', 'MX'), continent := 'North America']
+gm[continent == 'Americas', continent := 'South America']
+```
+
+Let's now plot the histogram of data length in each continent.
+
+```{r}
+ggplot(gm) +
+  geom_histogram(aes(year.no), binwidth = 1) +
+  facet_wrap(vars(continent)) +
+  scale_y_continuous(expand = c(0, 0)) +
+  labs(x = 'Data length [years]', y = 'Count')
+```
+
+North America has many stations. Africa has few. Europe's histogram has a very long right tail; some stations there have about 200 years of data.
+
+## Highlight degree of missingness
+
+Some streamflow stations have none or only a few days of missing data. Others may have data only intermittently. This information is provided by GSIM in the column `frac.missing.days` (fraction of missing days). Let's try to incorporate this information into our plot. We have used the x-axis for length and the y-axis for count, so missingness needs a third dimension: colours.
+
+The fraction of missing days vary from station to station, even for those having the same lengths and in the same continent. Therefore, we can't just highlight a column of the histogram with the same colour. So here's the idea. Each station occupies one pixel in the plot: its x-ordinate is its length, its y-ordinate is its position among other stations in the same continent and having the same length, and its colour is the degree of missingness.
+
+```{r}
+# Assign each station an index among all those having the same length
+# in the same continent. This is then the y-ordinate.
+gm[, num := 1:.N, by = .(continent, year.no)]
+ggplot(gm) +
+  geom_tile(aes(year.no, num, fill = frac.missing.days)) +
+  facet_wrap(vars(continent)) +
+  scale_fill_viridis_c() +
+  scale_y_continuous(expand = c(0, 0)) +
+  labs(x = 'Data length [years]', y = 'Count', fill = 'Fraction of\nmissing days')
+```
+
+We are almost there. The problem with this plot is that the colours are quite scattered. We might improve it by arranging the colours from light to dark (higher to lower degrees of missingness) to enhance the visual expression. 
+
+Another issue is that the shaded areas of Africa and Asia are too small, because there are two few stations there. So we could give each continent its own axis scales to "zoom in".
+
+Let's try these two modifications now.
+
+```{r}
+# First we rearrange the stations by degree of missingness within each group
+gm <- gm[, .SD[order(frac.missing.days, decreasing = TRUE)], 
+         by = .(continent, year.no)]
+# Now we assign the index after sorting
+gm[, num := 1:.N, by = .(continent, year.no)]
+# And plot
+ggplot(gm) +
+  # We have to use geom_tile() to plot the pixels instead of geom_histogram as before
+  geom_tile(aes(year.no, num, fill = frac.missing.days)) +
+  facet_wrap(vars(continent), scales = 'free') +
+  # Use the Viridis palette
+  scale_fill_viridis_c() +
+  scale_y_continuous(expand = c(0, 0)) +
+  labs(
+    x = 'Data length [years]', 
+    y = 'Count', 
+    fill = 'Fraction of\nmissing days')
+```
+
+I believe that this looks better. We lose the direct size comparisons across panels, but that can still be inferred from the axes. Trading that off, we now have a much smoother visual display of the missingness.
+
+Now just a minor final touch. With custom y-axis scales, the tallest column in each panel is touching the top of the plot, and it looks a bit crampy. We still want the columns to start from zero, and we only need to expand it a bit on top. Thankfully, `ggplot2` recently gained this capability with the function `expansion()`.
+
+```{r}
+ggplot(gm) +
+  geom_tile(aes(year.no, num, fill = frac.missing.days)) +
+  facet_wrap(vars(continent), scales = 'free') +
+  scale_fill_viridis_c() +
+  # We expand by zero at the bottom and by 10 at the top
+  scale_y_continuous(expand = expansion(add = c(0, 10))) +
+  labs(
+    x = 'Data length [years]', 
+    y = 'Count', 
+    fill = 'Fraction of\nmissing days')
+```
+
+## Summary
+
+There you have it. We plotted a highlighted histogram by not using `geom_histogram()`, but by using `geom_tile()` to plot each pixel separately. We also arranged the pixel to have a better visual feel. I hope this has been useful. Have fun with your next visualization.
+
+
+## References
