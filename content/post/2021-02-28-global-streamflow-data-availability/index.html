@@ -1,0 +1,146 @@
+---
+title: Global streamflow data availability
+author: Hung Nguyen
+date: '2021-02-28'
+slug: []
+categories: []
+tags: []
+description: Histograms of streamflow count by continent
+bibliography: references.bib
+---
+
+<script src="{{< blogdown/postref >}}index_files/header-attrs/header-attrs.js"></script>
+
+
+<style>
+pre {
+  overflow-x: auto;
+}
+
+pre code {
+  word-wrap: normal;
+  white-space: pre;
+}
+
+.container {
+  max-width: 8in;
+}
+</style>
+<div id="data" class="section level2">
+<h2>Data</h2>
+<p>How much streamflow data is publicly available globally? <span class="citation"><a href="#ref-do2018" role="doc-biblioref">Do et al.</a> (<a href="#ref-do2018" role="doc-biblioref">2018</a>)</span> compiled a massive global streamflow data set from multiple sources, and spent a lot of time on quality control. This data set is called GSIM—Global Streamflow Indices and Metadata. Thanks to their effort we have the answer for our question. We will explore GSIM to find out how many streamflow stations are available in each continent, and how many years of data are available at those stations.</p>
+<p>GSIM can be downloaded <a href="https://doi.pangaea.de/10.1594/PANGAEA.887477">here</a>. This is a massive data set. For this exercise we only need the file <code>GSIM_metadata.csv</code>, which I’ve included in the GitHub repo of this post. We will handle this file with <code>data.table</code> and plot it with <code>ggplot2</code>.</p>
+<pre class="r"><code>library(data.table)
+library(ggplot2)</code></pre>
+<p>We will also need the package <code>countrycode</code>, install it if you don’t have it already.</p>
+<pre class="r"><code>install.packages(&#39;countrycode&#39;)</code></pre>
+<p>Now let’s read and inspect the metadata record.</p>
+<pre class="r"><code>gm &lt;- fread(&#39;GSIM_metadata.csv&#39;) # gm stands for GSIM metadata
+head(gm)</code></pre>
+<pre><code>##       gsim.no reference.db reference.no grdb.merge grdb.no paired.db paired.db.no  river          station country latitude longitude altitude  area unit river.dist station.dist latlon.dist bin.latlon.dist mean.dist number.overlap number.available.days number.missing.days frac.missing.days year.start year.end year.no
+## 1: AF_0000001         grdb      2217100         No 2217100      &lt;NA&gt;         &lt;NA&gt; KUNDUZ      KULUKH TEPA      AF  36.9833   68.3000      320 37100 m3/s         NA           NA          NA              NA        NA             NA                  4748                   0         0.0000000       1965     1978      14
+## 2: AF_0000002         grdb      2217101         No 2217101      &lt;NA&gt;         &lt;NA&gt; KUNDUZ        CHAR DARA      AF  36.7000   68.8333      401 24820 m3/s         NA           NA          NA              NA        NA             NA                  5170                   0         0.0000000       1964     1978      15
+## 3: AF_0000003         grdb      2217102         No 2217102      &lt;NA&gt;         &lt;NA&gt; KUNDUZ          BAGHLAN      AF  36.1000   68.6667      562 19740 m3/s         NA           NA          NA              NA        NA             NA                  3829                   0         0.0000000       1968     1978      11
+## 4: AF_0000004         grdb      2217103         No 2217103      &lt;NA&gt;         &lt;NA&gt; KUNDUZ PUL-I-KONDA SANG      AF  35.6000   68.6000      899 12610 m3/s         NA           NA          NA              NA        NA             NA                  4018                   0         0.0000000       1967     1978      12
+## 5: AF_0000005         grdb      2217104         No 2217104      &lt;NA&gt;         &lt;NA&gt; KUNDUZ    DASHT-I-SAFED      AF  35.3000   67.9167     1588  3795 m3/s         NA           NA          NA              NA        NA             NA                  3177                 830         0.2071375       1967     1978      12
+## 6: AF_0000006         grdb      2217110         No 2217110      &lt;NA&gt;         &lt;NA&gt; BAMYAN             DOAB      AF  35.2667   67.9833     1468  5005 m3/s         NA           NA          NA              NA        NA             NA                  4018                   0         0.0000000       1967     1978      12</code></pre>
+<p>In this record, each row contains the attributes of a station. The very last column, <code>year.no</code>, is what we need: it’s the number of years in each station.</p>
+<p>The record tells us which country the station is in. There is a small problem: Namibia’s country code is <code>"NA"</code>, and <code>data.table</code> mistook it as <code>NA</code> value.</p>
+<pre class="r"><code>head(gm[is.na(country), .(gsim.no, country)])</code></pre>
+<pre><code>##       gsim.no country
+## 1: NA_0000001    &lt;NA&gt;
+## 2: NA_0000002    &lt;NA&gt;
+## 3: NA_0000003    &lt;NA&gt;
+## 4: NA_0000004    &lt;NA&gt;
+## 5: NA_0000005    &lt;NA&gt;
+## 6: NA_0000006    &lt;NA&gt;</code></pre>
+<p>Fixing this is easy:</p>
+<pre class="r"><code>gm[is.na(country), country := &#39;NA&#39;]</code></pre>
+</div>
+<div id="histogram-by-continent" class="section level2">
+<h2>Histogram by continent</h2>
+<p>We can use <code>country</code> to determine which continent each station is in with help from the package <code>countrycode</code>.</p>
+<pre class="r"><code># Assign continent to country
+gm[, continent := countrycode::countrycode(
+  warn = FALSE,
+  country,
+  origin = &#39;iso2c&#39;,
+  destination = &#39;continent&#39;
+)]
+# Serbia and Montenegro have become two countries since 2006.
+# They were listed as one country in some source data of GSIM.
+# This doesn&#39;t affect us as they are both in Europe.
+gm[country == &#39;CS&#39;, continent := &#39;Europe&#39;]
+# Split &quot;Americas&quot; into North America and South America
+gm[country %in% c(&#39;US&#39;, &#39;CA&#39;, &#39;MX&#39;), continent := &#39;North America&#39;]
+gm[continent == &#39;Americas&#39;, continent := &#39;South America&#39;]</code></pre>
+<p>Let’s now plot the histogram of data length in each continent.</p>
+<pre class="r"><code>ggplot(gm) +
+  geom_histogram(aes(year.no), binwidth = 1) +
+  facet_wrap(vars(continent)) +
+  scale_y_continuous(expand = c(0, 0)) +
+  labs(x = &#39;Data length [years]&#39;, y = &#39;Count&#39;)</code></pre>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
+<p>North America has many stations. Africa has few. Europe’s histogram has a very long right tail; some stations there have about 200 years of data.</p>
+</div>
+<div id="highlight-degree-of-missingness" class="section level2">
+<h2>Highlight degree of missingness</h2>
+<p>Some streamflow stations have none or only a few days of missing data. Others may have data only intermittently. This information is provided by GSIM in the column <code>frac.missing.days</code> (fraction of missing days). Let’s try to incorporate this information into our plot. We have used the x-axis for length and the y-axis for count, so missingness needs a third dimension: colours.</p>
+<p>The fraction of missing days vary from station to station, even for those having the same lengths and in the same continent. Therefore, we can’t just highlight a column of the histogram with the same colour. So here’s the idea. Each station occupies one pixel in the plot: its x-ordinate is its length, its y-ordinate is its position among other stations in the same continent and having the same length, and its colour is the degree of missingness.</p>
+<pre class="r"><code># Assign each station an index among all those having the same length
+# in the same continent. This is then the y-ordinate.
+gm[, num := 1:.N, by = .(continent, year.no)]
+ggplot(gm) +
+  geom_tile(aes(year.no, num, fill = frac.missing.days)) +
+  facet_wrap(vars(continent)) +
+  scale_fill_viridis_c() +
+  scale_y_continuous(expand = c(0, 0)) +
+  labs(x = &#39;Data length [years]&#39;, y = &#39;Count&#39;, fill = &#39;Fraction of\nmissing days&#39;)</code></pre>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-8-1.png" width="672" /></p>
+<p>We are almost there. The problem with this plot is that the colours are quite scattered. We might improve it by arranging the colours from light to dark (higher to lower degrees of missingness) to enhance the visual expression.</p>
+<p>Another issue is that the shaded areas of Africa and Asia are too small, because there are two few stations there. So we could give each continent its own axis scales to “zoom in.”</p>
+<p>Let’s try these two modifications now.</p>
+<pre class="r"><code># First we rearrange the stations by degree of missingness within each group
+gm &lt;- gm[, .SD[order(frac.missing.days, decreasing = TRUE)], 
+         by = .(continent, year.no)]
+# Now we assign the index after sorting
+gm[, num := 1:.N, by = .(continent, year.no)]
+# And plot
+ggplot(gm) +
+  # We have to use geom_tile() to plot the pixels instead of geom_histogram as before
+  geom_tile(aes(year.no, num, fill = frac.missing.days)) +
+  facet_wrap(vars(continent), scales = &#39;free&#39;) +
+  # Use the Viridis palette
+  scale_fill_viridis_c() +
+  scale_y_continuous(expand = c(0, 0)) +
+  labs(
+    x = &#39;Data length [years]&#39;, 
+    y = &#39;Count&#39;, 
+    fill = &#39;Fraction of\nmissing days&#39;)</code></pre>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-9-1.png" width="672" /></p>
+<p>I believe that this looks better. We lose the direct size comparisons across panels, but that can still be inferred from the axes. Trading that off, we now have a much smoother visual display of the missingness.</p>
+<p>Now just a minor final touch. With custom y-axis scales, the tallest column in each panel is touching the top of the plot, and it looks a bit crampy. We still want the columns to start from zero, and we only need to expand it a bit on top. Thankfully, <code>ggplot2</code> recently gained this capability with the function <code>expansion()</code>.</p>
+<pre class="r"><code>ggplot(gm) +
+  geom_tile(aes(year.no, num, fill = frac.missing.days)) +
+  facet_wrap(vars(continent), scales = &#39;free&#39;) +
+  scale_fill_viridis_c() +
+  # We expand by zero at the bottom and by 10 at the top
+  scale_y_continuous(expand = expansion(add = c(0, 10))) +
+  labs(
+    x = &#39;Data length [years]&#39;, 
+    y = &#39;Count&#39;, 
+    fill = &#39;Fraction of\nmissing days&#39;)</code></pre>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-10-1.png" width="672" /></p>
+</div>
+<div id="summary" class="section level2">
+<h2>Summary</h2>
+<p>There you have it. We plotted a highlighted histogram by not using <code>geom_histogram()</code>, but by using <code>geom_tile()</code> to plot each pixel separately. We also arranged the pixel to have a better visual feel. I hope this has been useful. Have fun with your next visualization.</p>
+</div>
+<div id="references" class="section level2 unnumbered">
+<h2>References</h2>
+<div id="refs" class="references csl-bib-body hanging-indent">
+<div id="ref-do2018" class="csl-entry">
+Do, Hong Xuan, Lukas Gudmundsson, Michael Leonard, and Seth Westra. 2018. <span>“The Global Streamflow Indices and Metadata Archive (GSIM) <span><span></span></span> Part 1: The Production of a Daily Streamflow Archive and Metadata.”</span> <em>Earth System Science Data</em> 10 (2): 765–85. <a href="https://doi.org/10.5194/essd-10-765-2018">https://doi.org/10.5194/essd-10-765-2018</a>.
+</div>
+</div>
+</div>
