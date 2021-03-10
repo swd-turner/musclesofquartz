@@ -11,7 +11,7 @@
 	<h1>{{ .Title }}</h1>
 	<h5>
 		{{ $dateformat := .Site.Params.DateFmt | default "Jan 02, 2006" }}
-		<time datetime="{{.Date}}">{{ .Date.Format $dateformat }}</time>
+		<time datetime="{{.Date}}">{{ .Date.Format $dateformat }}</time>  /  {{ .Params.author }}
 		<span class="no-print">
 			{{ with .Params.tags -}}
 			-
