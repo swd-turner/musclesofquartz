@@ -1,6 +1,6 @@
 ---
 title: New R tool winfapReader reviewed
-author: ~
+author: Sean Turner
 date: '2020-04-09'
 slug: quick-review-of-winfapreader
 categories: []

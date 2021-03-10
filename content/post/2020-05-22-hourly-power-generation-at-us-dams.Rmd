@@ -1,6 +1,6 @@
 ---
 title: Hourly power generation at US dams
-author: ~
+author: Sean Turner
 date: '2020-05-23'
 slug: hourly-power-generation-at-us-dams
 categories: []
