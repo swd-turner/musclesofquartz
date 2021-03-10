@@ -1,6 +1,6 @@
 ---
 title: Glacier data wrangle
-author: ~
+author: Sean Turner
 date: '2020-05-04'
 slug: a-look-at-glacier-projections
 categories: []

@@ -1,6 +1,6 @@
 ---
 title: Weekend data wrangle - CDP water supply risk
-author: ~
+author: Sean Turner
 date: '2020-04-11'
 slug: serious-bad-data-survey
 categories: []
