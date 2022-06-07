@@ -47,7 +47,7 @@ pygmentsUseClasses = true
 	description = "Muscles of Quartz"
 	images = ["site-feature-image.jpg"]
 	# Site's Tagline (Subtitle or Keyword)
-	tagline = "R code for handling water resources data"
+	tagline = "R and Python code for handling hydrological data"
 	# If true give attribution to this theme
 	themeAttrib = true
 	# URL to license file, can be outside of your domain

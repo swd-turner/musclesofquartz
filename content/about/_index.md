@@ -4,9 +4,9 @@ title: About
 ---
 ### Who are we?
 
-**Sean Turner**. Water resources systems analyst based in the Pacific Northwest. Heavy `tidyverse` user.
+**Sean Turner**. Water resources systems analyst based in the Pacific Northwest. Heavy R `tidyverse` user.
 
-**Hung Nguyen**. A water guy who loves tree rings. Postdoc at Columbia University. Heavy `data.table` user.
+**Hung Nguyen**. A water guy who loves tree rings. Postdoc at Columbia University. Heavy R `data.table` user.
 
 ### What's this blog all about?
 
