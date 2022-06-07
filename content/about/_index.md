@@ -10,7 +10,7 @@ title: About
 
 ### What's this blog all about?
 
-Here you'll find regular tutorials for scraping, wrangling, and analyzing water resources data using R.
+Here you'll find regular tutorials for scraping, wrangling, and analyzing water resources data using R (and occasionally Python).
 
 ## Why "Muscles of Quartz"?
 Check out "Entrance of the Rivers" by Pablo Neruda.
